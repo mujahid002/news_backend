@@ -9,6 +9,8 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 // Custom error messages
+error News__AlreadyUserHaveCredentials();
+error News__TokenIdDoesNotExists();
 error News__UserCannotBurnCredentials();
 error News__UserCannotTransferCredentials();
 
@@ -19,6 +21,8 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
         keccak256("NEWS_ORGANISATION_ROLE");
     bytes32 public constant NEWS_JOURNALIST_ROLE =
         keccak256("NEWS_JOURNALIST_ROLE");
+
+    mapping(uint256 => bytes[]) private s_newsData;
 
     // Event for token transfers
     event transfer(
@@ -35,17 +39,23 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
         _grantRole(NEWS_JOURNALIST_ROLE, _msgSender());
     }
 
+    /**************************
+        MAIN FUNCTIONs
+    ***************************/
+
     /**
      * @dev Send new credentials to a user with the specified URI.
      * @param _to Address of the recipient.
      * @param _credsURI URI of the credentials.
      */
-    function sendCredentials(address _to, string calldata _credsURI)
-        public
-        whenNotPaused
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        uint256 tokenId = generateTokenId(_to);
+    function sendCredentials(
+        address _to,
+        string calldata userName,
+        string calldata _credsURI
+    ) public whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (checkAddressHaveCredentials(_to))
+            revert News__AlreadyUserHaveCredentials();
+        uint256 tokenId = generateTokenId(_to, userName);
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _credsURI);
     }
@@ -55,42 +65,155 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
      * @param tokenId ID of the user to burn.
      */
     function burnCredentials(uint256 tokenId)
-        external
+        public
         whenNotPaused
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        require(
-            ownerOf(tokenId) != _msgSender(),
-            "CredentialRegistry: User cannot burn their own credentials"
-        );
+        if (ownerOf(tokenId) == address(0)) revert News__TokenIdDoesNotExists();
+
         _burn(tokenId);
     }
 
     /**
+     * @dev Store news content for a user.
+     * @param newsCid Content ID (CID) of the news to be stored.
+     */
+    function storeNews(string calldata newsCid)
+        public
+        whenNotPaused
+        onlyRole(NEWS_ORGANISATION_ROLE)
+        onlyRole(NEWS_JOURNALIST_ROLE)
+    {
+        // Get the tokenId of the caller (user)
+        uint256 tokenId = getTokenIdOfAnUser(_msgSender());
+
+        // Convert newsCid string to bytes
+        bytes memory cidInBytes = stringToBytes(newsCid);
+
+        // Push the news content bytes to the s_newsData mapping for the specified tokenId
+        s_newsData[tokenId].push(cidInBytes);
+    }
+
+    /**************************
+        HELPER VIEW FUNCTIONS
+    ***************************/
+
+    /**
      * @dev Generate a unique tokenId for the given user address.
      * @param userAddress Address of the user for whom tokenId is generated.
+     * @param userName Name of the user to include in the tokenId.
      * @return uint256 The generated tokenId.
      */
-    function generateTokenId(address userAddress)
+    function generateTokenId(address userAddress, string memory userName)
         public
         view
         returns (uint256)
     {
+        // Convert userAddress to hex string
         string memory addressToString = Strings.toHexString(
             uint256(uint160(userAddress)),
             20
         );
+
+        // Convert totalSupply, block.timestamp, and userName to string
         string memory totalSupplyToString = Strings.toString(totalSupply());
         string memory timestampToString = Strings.toString(block.timestamp);
+
+        // Concatenate all components to create a unique string
         string memory concatenatedString = string(
             abi.encodePacked(
                 addressToString,
+                userName,
                 totalSupplyToString,
                 timestampToString
             )
         );
+
+        // Convert the concatenated string to uint256 using keccak256 hash
         return stringToUint256(concatenatedString);
     }
+
+    /**
+     * @dev Fetch news data associated with a specific tokenId.
+     * @param tokenId The unique identifier for a user's credentials.
+     * @return An array of news data (content identifiers) associated with the given tokenId.
+     */
+    function fetchNewsForTokenId(uint256 tokenId)
+        public
+        view
+        returns (string[] memory)
+    {
+        // Retrieve news data in bytes associated with the given tokenId
+        bytes[] memory allCidInBytesArray = s_newsData[tokenId];
+        string[] memory allCidInStringArray = new string[](
+            allCidInBytesArray.length
+        );
+
+        // Convert bytes to string for each content identifier
+        for (uint256 i = 0; i < allCidInBytesArray.length; ++i) {
+            allCidInStringArray[i] = bytesToString(allCidInBytesArray[i]);
+        }
+
+        // Return the array of content identifiers
+        return allCidInStringArray;
+    }
+
+    /**
+     * @dev Get the latest content identifier associated with a specific tokenId.
+     * @param tokenId The unique identifier for a user's credentials.
+     * @return The latest content identifier in string format.
+     */
+    function getLatestCid(uint256 tokenId) public view returns (string memory) {
+        // Retrieve news data in bytes associated with the given tokenId
+        bytes[] memory allCidInBytesArray = s_newsData[tokenId];
+        uint256 cidArrayLength = allCidInBytesArray.length;
+
+        // Get the latest content identifier in bytes
+        bytes memory cidInBytes = allCidInBytesArray[cidArrayLength - 1];
+
+        // Convert bytes to string for the latest content identifier
+        return bytesToString(cidInBytes);
+    }
+
+    /**
+     * @dev Get the tokenId associated with a specific user address.
+     * @param userAddress The address of the user.
+     * @return The tokenId associated with the user.
+     */
+    function getTokenIdOfAnUser(address userAddress)
+        public
+        view
+        returns (uint256)
+    {
+        // Get the tokenId associated with the user's address
+        return tokenOfOwnerByIndex(userAddress, 0);
+    }
+
+    /**
+     * @dev Get the news data (content identifiers) associated with a specific tokenId.
+     * @param tokenId The unique identifier for a user's credentials.
+     * @return An array of news data in bytes associated with the given tokenId.
+     */
+    function getNewsData(uint256 tokenId) public view returns (bytes[] memory) {
+        // Retrieve news data in bytes associated with the given tokenId
+        return s_newsData[tokenId];
+    }
+
+    /**
+     * @dev Check if a user owns any credentials.
+     * @param _userAddress Address of the user.
+     */
+    function checkAddressHaveCredentials(address _userAddress)
+        public
+        view
+        returns (bool)
+    {
+        return balanceOf(_userAddress) > 0;
+    }
+
+    /**************************
+        HELPER PURE FUNCTIONS
+    ***************************/
 
     /**
      * @dev Convert a string to uint256 using keccak256 hash.
@@ -102,23 +225,51 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
         pure
         returns (uint256)
     {
+        // Convert the string to bytes
         bytes memory theBytes = bytes(theString);
+
+        // Calculate the keccak256 hash of the bytes
         bytes32 theHash = keccak256(theBytes);
+
+        // Convert the hash to uint256
         uint256 theUint256 = uint256(theHash);
+
+        // Return the resulting uint256 value
         return theUint256;
     }
 
     /**
-     * @dev Check if a user owns any credentials.
-     * @param _userAddress Address of the user.
-     * @return True if the user owns notices, false otherwise.
+     * @dev Convert a string to bytes.
+     * @param theString String to convert.
+     * @return bytes Converted bytes value.
      */
-    function checkAddressHaveCredentials(address _userAddress)
+    function stringToBytes(string calldata theString)
         public
-        view
-        returns (bool)
+        pure
+        returns (bytes memory)
     {
-        return balanceOf(_userAddress) > 0;
+        // Convert the string to bytes
+        bytes calldata theBytes = bytes(theString);
+
+        // Return the resulting bytes value
+        return theBytes;
+    }
+
+    /**
+     * @dev Convert bytes to string.
+     * @param theBytes Bytes to convert.
+     * @return string Converted string value.
+     */
+    function bytesToString(bytes memory theBytes)
+        public
+        pure
+        returns (string memory)
+    {
+        // Convert bytes to string
+        string memory theString = string(abi.encodePacked(theBytes));
+
+        // Return the resulting string value
+        return theString;
     }
 
     /**************************
