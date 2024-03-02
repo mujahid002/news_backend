@@ -17,13 +17,18 @@ error News__UserCannotTransferCredentials();
 // TestWallet Contract
 contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
     // Bytes32 for Access Control Roles
-    bytes32 public constant NEWS_ORGANISATION_ROLE =
-        keccak256("NEWS_ORGANISATION_ROLE");
-    bytes32 public constant NEWS_JOURNALIST_ROLE =
-        keccak256("NEWS_JOURNALIST_ROLE");
+    bytes32 public constant NEWS_PUBLISHER_ROLE =
+        keccak256("NEWS_PUBLISHER_ROLE");
 
+    // Mapping: tokenId is mapped with Array of Bytes, array elements indicates CID in bytes format
     mapping(uint256 => bytes[]) private s_newsData;
 
+    // events
+    event storedLatestNews(
+        uint256 indexed tokenId,
+        string indexed cid,
+        bytes indexed data
+    );
     // Event for token transfers
     event transfer(
         address indexed from,
@@ -35,18 +40,17 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
     // Constructor
     constructor() ERC721("TestNewsToken", "TNT") {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _grantRole(NEWS_ORGANISATION_ROLE, _msgSender());
-        _grantRole(NEWS_JOURNALIST_ROLE, _msgSender());
+        _grantRole(NEWS_PUBLISHER_ROLE, _msgSender());
     }
 
     /**************************
-        MAIN FUNCTIONs
+        MAIN FUNCTIONS
     ***************************/
 
     /**
      * @dev Send new credentials to a user with the specified URI.
-     * @param _to Address of the recipient.
-     * @param _credsURI URI of the credentials.
+     * @param _to: Address of the publisher.
+     * @param _credsURI: URI indicates credentials for Publisher.
      */
     function sendCredentials(
         address _to,
@@ -58,11 +62,12 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
         uint256 tokenId = generateTokenId(_to, userName);
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _credsURI);
+        _grantRole(NEWS_PUBLISHER_ROLE, _to);
     }
 
     /**
      * @dev Burn a tokenId belonging to the specified tokenId.
-     * @param tokenId ID of the user to burn.
+     * @param tokenId: ID of the publisher to burn.
      */
     function burnCredentials(uint256 tokenId)
         public
@@ -75,23 +80,21 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
     }
 
     /**
-     * @dev Store news content for a user.
-     * @param newsCid Content ID (CID) of the news to be stored.
+     * @dev Store news content as a CID by Publisher.
+     * @param newsCid: CID of the news from IPFS to be stored on contract.
      */
     function storeNews(string calldata newsCid)
         public
         whenNotPaused
-        onlyRole(NEWS_ORGANISATION_ROLE)
-        onlyRole(NEWS_JOURNALIST_ROLE)
+        onlyRole(NEWS_PUBLISHER_ROLE)
     {
-        // Get the tokenId of the caller (user)
         uint256 tokenId = getTokenIdOfAnUser(_msgSender());
 
         // Convert newsCid string to bytes
-        bytes memory cidInBytes = stringToBytes(newsCid);
+        bytes memory cidInBytes = bytes(newsCid);
 
-        // Push the news content bytes to the s_newsData mapping for the specified tokenId
         s_newsData[tokenId].push(cidInBytes);
+        emit storedLatestNews(tokenId, newsCid, cidInBytes);
     }
 
     /**************************
@@ -100,9 +103,8 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
 
     /**
      * @dev Generate a unique tokenId for the given user address.
-     * @param userAddress Address of the user for whom tokenId is generated.
-     * @param userName Name of the user to include in the tokenId.
-     * @return uint256 The generated tokenId.
+     * @param userAddress: Address of the publisher for whom tokenId is generated.
+     * @param userName: username of the Org/Journalist to include in the unique tokenId.
      */
     function generateTokenId(address userAddress, string memory userName)
         public
@@ -129,42 +131,39 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
             )
         );
 
-        // Convert the concatenated string to uint256 using keccak256 hash
+        // Convert the concatenated string to uint256
         return stringToUint256(concatenatedString);
     }
 
     /**
      * @dev Fetch news data associated with a specific tokenId.
-     * @param tokenId The unique identifier for a user's credentials.
-     * @return An array of news data (content identifiers) associated with the given tokenId.
+     * @param tokenId: The unique identifier of publisher.
      */
     function fetchNewsForTokenId(uint256 tokenId)
         public
         view
         returns (string[] memory)
     {
-        // Retrieve news data in bytes associated with the given tokenId
+        // Retrieve news data in bytes array associated with the given tokenId
         bytes[] memory allCidInBytesArray = s_newsData[tokenId];
         string[] memory allCidInStringArray = new string[](
             allCidInBytesArray.length
         );
 
-        // Convert bytes to string for each content identifier
+        // Convert bytes to string from each element to CID(string)
         for (uint256 i = 0; i < allCidInBytesArray.length; ++i) {
-            allCidInStringArray[i] = bytesToString(allCidInBytesArray[i]);
+            allCidInStringArray[i] = string(
+                abi.encodePacked(allCidInBytesArray[i])
+            );
         }
-
-        // Return the array of content identifiers
         return allCidInStringArray;
     }
 
     /**
-     * @dev Get the latest content identifier associated with a specific tokenId.
-     * @param tokenId The unique identifier for a user's credentials.
-     * @return The latest content identifier in string format.
+     * @dev Get the latest CID associated with a specific tokenId.
+     * @param tokenId: The unique identifier of publisher.
      */
     function getLatestCid(uint256 tokenId) public view returns (string memory) {
-        // Retrieve news data in bytes associated with the given tokenId
         bytes[] memory allCidInBytesArray = s_newsData[tokenId];
         uint256 cidArrayLength = allCidInBytesArray.length;
 
@@ -172,27 +171,24 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
         bytes memory cidInBytes = allCidInBytesArray[cidArrayLength - 1];
 
         // Convert bytes to string for the latest content identifier
-        return bytesToString(cidInBytes);
+        return string(abi.encodePacked((cidInBytes)));
     }
 
     /**
      * @dev Get the tokenId associated with a specific user address.
-     * @param userAddress The address of the user.
-     * @return The tokenId associated with the user.
+     * @param userAddress: The address of the publisher.
      */
     function getTokenIdOfAnUser(address userAddress)
         public
         view
         returns (uint256)
     {
-        // Get the tokenId associated with the user's address
         return tokenOfOwnerByIndex(userAddress, 0);
     }
 
     /**
      * @dev Get the news data (content identifiers) associated with a specific tokenId.
-     * @param tokenId The unique identifier for a user's credentials.
-     * @return An array of news data in bytes associated with the given tokenId.
+     * @param tokenId: The unique identifier of publisher.
      */
     function getNewsData(uint256 tokenId) public view returns (bytes[] memory) {
         // Retrieve news data in bytes associated with the given tokenId
@@ -201,7 +197,7 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
 
     /**
      * @dev Check if a user owns any credentials.
-     * @param _userAddress Address of the user.
+     * @param _userAddress: Address of the user.
      */
     function checkAddressHaveCredentials(address _userAddress)
         public
@@ -217,8 +213,7 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
 
     /**
      * @dev Convert a string to uint256 using keccak256 hash.
-     * @param theString String to convert.
-     * @return uint256 Converted uint256 value.
+     * @param theString: String to convert.
      */
     function stringToUint256(string memory theString)
         public
@@ -234,42 +229,7 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
         // Convert the hash to uint256
         uint256 theUint256 = uint256(theHash);
 
-        // Return the resulting uint256 value
         return theUint256;
-    }
-
-    /**
-     * @dev Convert a string to bytes.
-     * @param theString String to convert.
-     * @return bytes Converted bytes value.
-     */
-    function stringToBytes(string calldata theString)
-        public
-        pure
-        returns (bytes memory)
-    {
-        // Convert the string to bytes
-        bytes calldata theBytes = bytes(theString);
-
-        // Return the resulting bytes value
-        return theBytes;
-    }
-
-    /**
-     * @dev Convert bytes to string.
-     * @param theBytes Bytes to convert.
-     * @return string Converted string value.
-     */
-    function bytesToString(bytes memory theBytes)
-        public
-        pure
-        returns (string memory)
-    {
-        // Convert bytes to string
-        string memory theString = string(abi.encodePacked(theBytes));
-
-        // Return the resulting string value
-        return theString;
     }
 
     /**************************
