@@ -15,7 +15,7 @@ error News__UserCannotBurnCredentials();
 error News__UserCannotTransferCredentials();
 
 // TestWallet Contract
-contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
+contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
     // Bytes32 for Access Control Roles
     bytes32 public constant NEWS_PUBLISHER_ROLE =
         keccak256("NEWS_PUBLISHER_ROLE");
@@ -139,7 +139,7 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
      * @dev Fetch news data associated with a specific tokenId.
      * @param tokenId: The unique identifier of publisher.
      */
-    function fetchNewsForTokenId(uint256 tokenId)
+    function fetchNewsForTokenIdInStringArray(uint256 tokenId)
         public
         view
         returns (string[] memory)
@@ -190,7 +190,7 @@ contract News is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
      * @dev Get the news data (content identifiers) associated with a specific tokenId.
      * @param tokenId: The unique identifier of publisher.
      */
-    function getNewsData(uint256 tokenId) public view returns (bytes[] memory) {
+    function getNewsDataInBytesArray(uint256 tokenId) public view returns (bytes[] memory) {
         // Retrieve news data in bytes associated with the given tokenId
         return s_newsData[tokenId];
     }
