@@ -9,10 +9,10 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 // Custom error messages
-error News__AlreadyUserHaveCredentials();
+error News__AlreadyUserHaveCertificate();
 error News__TokenIdDoesNotExists();
-error News__UserCannotBurnCredentials();
-error News__UserCannotTransferCredentials();
+error News__UserCannotBurnCertificate();
+error News__UserCannotTransferCertificate();
 
 // TestWallet Contract
 contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
@@ -33,7 +33,7 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
     event transfer(
         address indexed from,
         address indexed to,
-        uint256 tokenId,
+        uint256 indexed tokenId,
         bytes data
     );
 
@@ -48,28 +48,29 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
     ***************************/
 
     /**
-     * @dev Send new credentials to a user with the specified URI.
+     * @dev Send new Certificate to a user with the specified URI.
      * @param _to: Address of the publisher.
-     * @param _credsURI: URI indicates credentials for Publisher.
+     * @param _credsURI: URI indicates Certificate for Publisher.
      */
-    function sendCredentials(
+    function sendCertificate(
         address _to,
         string calldata userName,
         string calldata _credsURI
     ) public whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (checkAddressHaveCredentials(_to))
-            revert News__AlreadyUserHaveCredentials();
+        if (checkAddressHaveCertificate(_to))
+            revert News__AlreadyUserHaveCertificate();
         uint256 tokenId = generateTokenId(_to, userName);
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _credsURI);
         _grantRole(NEWS_PUBLISHER_ROLE, _to);
+        emit transfer(_msgSender(),_to,tokenId,"");
     }
 
     /**
      * @dev Burn a tokenId belonging to the specified tokenId.
      * @param tokenId: ID of the publisher to burn.
      */
-    function burnCredentials(uint256 tokenId)
+    function burnCertificate(uint256 tokenId)
         public
         whenNotPaused
         onlyRole(DEFAULT_ADMIN_ROLE)
@@ -77,13 +78,14 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
         if (ownerOf(tokenId) == address(0)) revert News__TokenIdDoesNotExists();
 
         _burn(tokenId);
+        _revokeRole(NEWS_PUBLISHER_ROLE, ownerOf(tokenId));
     }
 
     /**
      * @dev Store news content as a CID by Publisher.
      * @param newsCid: CID of the news from IPFS to be stored on contract.
      */
-    function storeNews(string calldata newsCid)
+    function submitNews(string calldata newsCid)
         public
         whenNotPaused
         onlyRole(NEWS_PUBLISHER_ROLE)
@@ -196,10 +198,10 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
     }
 
     /**
-     * @dev Check if a user owns any credentials.
+     * @dev Check if a user owns any Certificate.
      * @param _userAddress: Address of the user.
      */
-    function checkAddressHaveCredentials(address _userAddress)
+    function checkAddressHaveCertificate(address _userAddress)
         public
         view
         returns (bool)
@@ -246,7 +248,7 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
         bytes memory data
     ) internal virtual override {
         emit transfer(from, to, tokenId, data);
-        revert News__UserCannotTransferCredentials();
+        revert News__UserCannotTransferCertificate();
     }
 
     function safeTransferFrom(
@@ -256,7 +258,7 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
         bytes memory data
     ) public virtual override(ERC721, IERC721) {
         emit transfer(from, to, tokenId, data);
-        revert News__UserCannotTransferCredentials();
+        revert News__UserCannotTransferCertificate();
     }
 
     function transferFrom(
@@ -265,7 +267,7 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
         uint256 tokenId
     ) public virtual override(ERC721, IERC721) {
         emit transfer(from, to, tokenId, "");
-        revert News__UserCannotTransferCredentials();
+        revert News__UserCannotTransferCertificate();
     }
 
     /**************************
