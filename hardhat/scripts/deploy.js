@@ -11,12 +11,15 @@ async function main() {
   console.log("----------------------------------------------------------");
 
   // Verify TestNews
-  console.log("Verifying TestNews.....");
-  await run("verify:verify", {
-    address: TestNewsAddress,
-    constructorArguments: [],
-  });
-  console.log("----------------------------------------------------------");
+  console.log(
+    "For Verifying TestNews use this Command in terminal: yarn hardhat verify --network mumbai DEPLOYED_CONTRCT_ADDRESS"
+  );
+  // const verifyContract = await run("verify:verify", {
+  //   address: TestNewsAddress,
+  //   constructorArguments: [],
+  // });
+  // await verifyContract.wait();
+  // console.log("----------------------------------------------------------");
 }
 
 main().catch((error) => {
