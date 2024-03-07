@@ -1,11 +1,15 @@
 const {
   storeOrganisationRegisterDetails,
+  storeJournalistRegisterDetails,
+  storeNewsDetails,
 } = require("../../database/functions/index");
 const { fetchWalletDetails } = require("../../database/functions/admin");
 const {
   generateUniqueOrgIdTxn,
   generateUniqueJournalistIdTxn,
   sendCertificateTxnForOrg,
+  sendCertificateTxnForJournalist,
+  submitNewsTxn,
 } = require("../../services/web3");
 
 const loginController = async (req, res) => {
@@ -28,6 +32,12 @@ const orgRegisterController = async (req, res) => {
 
     const organisation = req.body;
 
+    // console.log(organisation.org_username);
+    // res.status(200).json({
+    //   organisation: organisation,
+    // });
+    // return;
+
     const orgDetails = {
       org_api_key: "working...",
       org_api_secrect: "working...",
@@ -35,7 +45,7 @@ const orgRegisterController = async (req, res) => {
     };
 
     const wallet = await fetchWalletDetails();
-    console.log(wallet.address);
+    // console.log(wallet.address);
     // const generateOrgIdResponse = await generateUniqueOrgIdTxn(
     //   wallet.address,
     //   org_username
@@ -87,14 +97,17 @@ const journalistRegisterController = async (req, res) => {
       journalist_password,
     } = req.body;
 
+    const journalist = req.body;
+
+    // Add any future data
     const journalistDetails = {};
 
     const wallet = await fetchWalletDetails(); // Implement fetchWalletDetails function
-    console.log(wallet.address);
+    // console.log(wallet.address);
 
-    const generateJournalistIdResponse = await generateUniqueJournalistIdTxn(
+    const generateJournalistIdResponse = await sendCertificateTxnForJournalist(
       wallet.address,
-      journalist_username
+      journalist
     );
 
     if (generateJournalistIdResponse.success) {
@@ -103,11 +116,66 @@ const journalistRegisterController = async (req, res) => {
         journalist_id: generateJournalistIdResponse.journalistId,
         journalist_wallet_address: wallet.address,
         journalist_private_key: wallet.key,
+        journalist_transaction_id: generateJournalistIdResponse.txnHash,
+        journalist_pinata_uri: generateJournalistIdResponse.jsonData,
       };
+
+      await storeJournalistRegisterDetails(newJournalistDetails);
 
       // Sending a single argument or an array of arguments
       res.status(200).json({
         journalistDetails: newJournalistDetails,
+      });
+      return;
+    } else {
+      res.status(500).send({ code: 500, message: "Internal Server Error" });
+      return;
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ code: 500, message: "Internal Server Error" });
+  }
+};
+const submitNewsController = async (req, res) => {
+  try {
+    const {
+      news_language,
+      news_title,
+      news_short_description,
+      news_category,
+      news_tags,
+      news_content,
+      news_authors,
+      news_image,
+      is_news_published,
+      news_published_link,
+      published_timestamp,
+    } = req.body;
+
+    const news = req.body;
+
+    // Add any future data
+    const newsDetails = {};
+
+    const wallet = await fetchWalletDetails(); // Implement fetchWalletDetails function
+    // console.log(wallet.address);
+
+    const generateNewsIdResponse = await submitNewsTxn(wallet.address, news);
+
+    if (generateNewsIdResponse.success) {
+      const newNewsDetails = {
+        ...newsDetails,
+        news_id: generateNewsIdResponse.newsId,
+        news_id_inBytes: generateNewsIdResponse.newdIdInBytes,
+        news_pinata_uri: generateNewsIdResponse.jsonData,
+        news_transaction_id: generateNewsIdResponse.txnHash,
+      };
+
+      await storeNewsDetails(newNewsDetails);
+
+      // Sending a single argument or an array of arguments
+      res.status(200).json({
+        newsDetails: newNewsDetails,
       });
       return;
     } else {
@@ -124,4 +192,5 @@ module.exports = {
   loginController,
   orgRegisterController,
   journalistRegisterController,
+  submitNewsController,
 };
