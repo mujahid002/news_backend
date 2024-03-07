@@ -30,7 +30,7 @@ apiRouter.post(
 );
 apiRouter.post(
   "/org/register",
-  validateSchema(OrgRegistrationSchema),
+  // validateSchema(OrgRegistrationSchema),
   orgRegisterController
 );
 apiRouter.post(
