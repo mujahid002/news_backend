@@ -7,24 +7,37 @@ const storeOrganisationRegisterDetails = async (data) => {
     const db = client.db("Xcheck_db");
     const collection = db.collection("organizations");
 
-    const storeOrgDetails = await collection.insertOne(data);
+    const filter = { org_username: data.org_username };
 
-    console.log("Stored Organisation Details", storeOrgDetails);
+    const updateResult = await collection.updateOne(
+      filter,
+      { $set: data },
+      { upsert: true }
+    );
+
+    console.log("Update Result:", updateResult);
 
     await client.close();
   } catch (error) {
-    console.error("Unable to Run storeOrganisationsDetails: ", error);
+    console.error("Unable to run storeOrganisationsDetails: ", error);
   }
 };
+
 const storeJournalistRegisterDetails = async (data) => {
   try {
     const client = await connectMongo();
     const db = client.db("Xcheck_db");
     const collection = db.collection("journalists");
 
-    const journalistDetails = await collection.insertOne(data);
+    const filter = { journalist_username: data.journalist_username };
 
-    console.log("Stored Journalist Details", journalistDetails);
+    const updateResult = await collection.updateOne(
+      filter,
+      { $set: data },
+      { upsert: true }
+    );
+
+    console.log("Update Result:", updateResult);
 
     await client.close();
   } catch (error) {
@@ -37,15 +50,26 @@ const storeNewsDetails = async (data) => {
     const db = client.db("Xcheck_db");
     const collection = db.collection("news");
 
-    const newsDetails = await collection.insertOne(data);
+    const filter = { news_authors: data.news_authors };
 
-    console.log("Stored News Details", newsDetails);
+    const updateResult = await collection.updateOne(
+      filter,
+      { $set: data },
+      { upsert: true }
+    );
+
+    console.log("Update Result:", updateResult);
+
+    if (updateResult.modifiedCount === 0 && updateResult.upsertedCount === 0) {
+      console.log("No document matched the filter criteria.");
+    }
 
     await client.close();
   } catch (error) {
-    console.error("Unable to Run storeNewsDetails: ", error);
+    console.error("Error in storeNewsDetails: ", error);
   }
 };
+
 const fetchLoginDetails = async () => {};
 const fetchOrganisationsDetails = async () => {
   try {

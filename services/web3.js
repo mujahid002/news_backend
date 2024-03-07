@@ -109,7 +109,7 @@ const createFileAndUploadForOrg = async (data) => {
       image_url:
         data.image ||
         "https://ipfs.io/ipfs/QmYGAKBR1R34g8kXgDaQSjuji1WwYokNM9jEkMG67jjD1w",
-      external_url: `${data.org_website}`,
+      external_url: `${data.org_website[0]}`,
       attributes: [
         {
           trait_type: `Name`,
@@ -205,12 +205,12 @@ const createFileAndUploadForJournalist = async (data) => {
   }
 };
 
-const sendCertificateTxnForOrg = async (walletAddress, data) => {
+const sendCertificateTxnForOrg = async (data) => {
   try {
-    if (!walletAddress || !data) {
+    if (!data) {
       return {
         success: false,
-        error: "Invalid parameters. Wallet and data are required.",
+        error: "Invalid parameters. data is required.",
       };
     }
 
@@ -226,7 +226,7 @@ const sendCertificateTxnForOrg = async (walletAddress, data) => {
     console.log("The URI is ", uri);
 
     const gasAmount = await testNewsContract.estimateGas.sendCertificate(
-      walletAddress,
+      data.org_wallet_address || "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
       data.org_username,
       uri
     );
@@ -237,7 +237,7 @@ const sendCertificateTxnForOrg = async (walletAddress, data) => {
     const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
     const tx = await testNewsContract.sendCertificate(
-      walletAddress,
+      data.org_wallet_address || "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
       data.org_username,
       uri,
       {
@@ -257,12 +257,15 @@ const sendCertificateTxnForOrg = async (walletAddress, data) => {
       const tokenId = transferEvent.args.tokenId.toString();
 
       console.log(
-        `Token ID: ${tokenId} minted to ${walletAddress} with transaction hash ${tx.hash}`
+        `Token ID: ${tokenId} minted to ${
+          data.org_wallet_address ||
+          "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5"
+        } with transaction hash ${tx.hash}`
       );
 
       return {
         success: true,
-        orgId: tokenId,
+        orgTokenId: tokenId,
         jsonData: uri,
         txnHash: tx.hash,
       };
@@ -281,12 +284,12 @@ const sendCertificateTxnForOrg = async (walletAddress, data) => {
     };
   }
 };
-const sendCertificateTxnForJournalist = async (walletAddress, data) => {
+const sendCertificateTxnForJournalist = async (data) => {
   try {
-    if (!walletAddress || !data) {
+    if (!data) {
       return {
         success: false,
-        error: "Invalid parameters. Wallet and data are required.",
+        error: "Invalid parameters. data is required.",
       };
     }
 
@@ -302,7 +305,8 @@ const sendCertificateTxnForJournalist = async (walletAddress, data) => {
     console.log("The URI is ", uri);
 
     const gasAmount = await testNewsContract.estimateGas.sendCertificate(
-      walletAddress,
+      data.journalist_wallet_address ||
+        "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
       data.journalist_username,
       uri
     );
@@ -313,7 +317,8 @@ const sendCertificateTxnForJournalist = async (walletAddress, data) => {
     const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
     const tx = await testNewsContract.sendCertificate(
-      walletAddress,
+      data.journalist_wallet_address ||
+        "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
       data.journalist_username,
       uri,
       {
@@ -333,12 +338,15 @@ const sendCertificateTxnForJournalist = async (walletAddress, data) => {
       const tokenId = transferEvent.args.tokenId.toString();
 
       console.log(
-        `Token ID: ${tokenId} minted to ${walletAddress} with transaction hash ${tx.hash}`
+        `Token ID: ${tokenId} minted to ${
+          data.journalist_wallet_address ||
+          "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5"
+        } with transaction hash ${tx.hash}`
       );
 
       return {
         success: true,
-        journalistId: tokenId,
+        journalistTokenId: tokenId,
         jsonData: uri,
         txnHash: tx.hash,
       };
@@ -357,9 +365,9 @@ const sendCertificateTxnForJournalist = async (walletAddress, data) => {
     };
   }
 };
-const submitNewsTxn = async (walletAddress, data) => {
+const submitNewsTxn = async (data) => {
   try {
-    if (!walletAddress || !data) {
+    if (!data) {
       return {
         success: false,
         error: "Invalid parameters. Wallet and data are required.",

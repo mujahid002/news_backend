@@ -35,12 +35,12 @@ apiRouter.post(
 );
 apiRouter.post(
   "/journalist/register",
-  validateSchema(JournalistRegistrationSchema),
+  // validateSchema(JournalistRegistrationSchema),
   journalistRegisterController
 );
 apiRouter.post(
   "/news/submit-news",
-  validateSchema(NewsDetailsSchema),
+  // validateSchema(NewsDetailsSchema),
   submitNewsController
 );
 apiRouter.get("/organizations", async (req, res) => {
