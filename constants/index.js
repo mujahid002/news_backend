@@ -8,7 +8,7 @@ const provider = new ethers.providers.JsonRpcProvider(
 const polygonWallet = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
 
 const signer = provider.getSigner();
-TEST_NEWS_ADDRESS = "0xf575CBbe6597791d7DE23A618e52Fe8CDeaC6f87";
+TEST_NEWS_ADDRESS = "0x9AF42ca633B08E70f2b919F0560be000cb1d42FC";
 TEST_NEWS_ABI = [
   { inputs: [], stateMutability: "nonpayable", type: "constructor" },
   { inputs: [], name: "AccessControlBadConfirmation", type: "error" },
@@ -78,7 +78,6 @@ TEST_NEWS_ABI = [
   },
   { inputs: [], name: "EnforcedPause", type: "error" },
   { inputs: [], name: "ExpectedPause", type: "error" },
-  { inputs: [], name: "News__AlreadyUserHaveCertificate", type: "error" },
   { inputs: [], name: "News__TokenIdDoesNotExists", type: "error" },
   { inputs: [], name: "News__UserCannotTransferCertificate", type: "error" },
   {
@@ -331,6 +330,13 @@ TEST_NEWS_ABI = [
   },
   {
     inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "burn",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
     name: "burnCertificate",
     outputs: [],
     stateMutability: "nonpayable",
@@ -346,9 +352,27 @@ TEST_NEWS_ABI = [
     type: "function",
   },
   {
+    inputs: [
+      { internalType: "address", name: "_userAddress", type: "address" },
+    ],
+    name: "fetchLatestTokenIdOfAnUser",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
     name: "fetchNewsForTokenIdInStringArray",
     outputs: [{ internalType: "string[]", name: "", type: "string[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_userAddress", type: "address" },
+    ],
+    name: "fetchUserTokenIds",
+    outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
     stateMutability: "view",
     type: "function",
   },
