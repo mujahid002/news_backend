@@ -5,6 +5,7 @@ import {ERC721, IERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {ERC721Burnable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -15,7 +16,7 @@ error News__UserCannotBurnCertificate();
 error News__UserCannotTransferCertificate();
 
 // TestWallet Contract
-contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable {
+contract TestNews is ERC721Enumerable, ERC721URIStorage, ERC721Burnable, AccessControl, Pausable {
     // Bytes32 for Access Control Roles
     bytes32 public constant NEWS_PUBLISHER_ROLE =
         keccak256("NEWS_PUBLISHER_ROLE");
@@ -44,6 +45,31 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
     }
 
     /**************************
+        TESTING PURPOSES
+    ***************************/
+    function fetchUserTokenIds(address _userAddress)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        uint256 userTokenIdCount = balanceOf(_userAddress);
+        uint256[] memory _allUserTokenIds = new uint256[](userTokenIdCount);
+        for (uint256 i = 0; i < userTokenIdCount; i++) {
+            _allUserTokenIds[i] = tokenOfOwnerByIndex(_userAddress, i);
+        }
+
+        return _allUserTokenIds;
+    }
+    function fetchLatestTokenIdOfAnUser(address _userAddress)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 userTokenIdCount = balanceOf(_userAddress);
+        return tokenOfOwnerByIndex(_userAddress, userTokenIdCount-1);
+        
+    }
+    /**************************
         MAIN FUNCTIONS
     ***************************/
 
@@ -57,8 +83,9 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
         string calldata userName,
         string calldata _credsURI
     ) public whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (checkAddressHaveCertificate(_to))
-            revert News__AlreadyUserHaveCertificate();
+        // for testing purposes removed check...
+        // if (checkAddressHaveCertificate(_to))
+        //     revert News__AlreadyUserHaveCertificate();
         uint256 tokenId = generateTokenId(_to, userName);
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _credsURI);
@@ -120,7 +147,7 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
         );
 
         // Convert totalSupply, block.timestamp, and userName to string
-        string memory totalSupplyToString = Strings.toString(totalSupply());
+        // string memory totalSupplyToString = Strings.toString(totalSupply());
         string memory timestampToString = Strings.toString(block.timestamp);
 
         // Concatenate all components to create a unique string
@@ -128,7 +155,7 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
             abi.encodePacked(
                 addressToString,
                 userName,
-                totalSupplyToString,
+                // totalSupplyToString,
                 timestampToString
             )
         );
@@ -206,7 +233,10 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
         view
         returns (bool)
     {
+        // for testing...
         return balanceOf(_userAddress) > 0;
+
+        // return balanceOf(_userAddress)==1;
     }
 
     /**************************
@@ -305,7 +335,7 @@ contract TestNews is ERC721Enumerable, ERC721URIStorage, AccessControl, Pausable
         public
         view
         virtual
-        override(ERC721Enumerable, ERC721URIStorage, AccessControl)
+        override(ERC721, ERC721Enumerable, ERC721URIStorage,AccessControl)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
