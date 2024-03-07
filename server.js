@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const apiRouter = require("./components/routers/index.js");
+const connectMongo = require("./database/connectMongo.js");
 
 const app = express();
 
@@ -19,5 +20,5 @@ app.get("/", (req, res) => {
 // Start the server and listen on port 5555
 app.listen(5555, () => {
   console.log("App listening on port 5555");
-  connectMongo();
+  // connectMongo();
 });
