@@ -130,7 +130,8 @@ const createFileAndUploadForOrg = async (data) => {
         {
           display_type: "date",
           trait_type: "Organisation Joined Date",
-          value: Math.floor(new Date(data.issueDate).getTime() / 1000),
+          value: Math.floor(Date.now() / 1000),
+          // value: Math.floor(new Date(data.issueDate).getTime() / 1000),
         },
       ],
     };
@@ -144,6 +145,62 @@ const createFileAndUploadForOrg = async (data) => {
     return cid;
   } catch (error) {
     console.error("Error creating and uploading file:", error);
+    throw error;
+  }
+};
+const createFileAndUploadForJournalist = async (data) => {
+  try {
+    const fileName = `${data.journalist_username}.json`;
+
+    const selectedData = {
+      name: `${data.journalist_first_name} ${data.journalist_last_name}`,
+      description: `Journalist ${data.journalist_first_name} ${data.journalist_last_name} from organization ID ${data.org_id}. About: ${data.about_journalist}`,
+      image:
+        data.image ||
+        "https://ipfs.io/ipfs/QmSyKYTMCZmkU6Vp3E62rSDn3UDqM5f25uoQCYN5AfXRtX",
+      image_url:
+        data.image ||
+        "https://ipfs.io/ipfs/QmSyKYTMCZmkU6Vp3E62rSDn3UDqM5f25uoQCYN5AfXRtX",
+      external_url: data.journalist_website || "",
+      attributes: [
+        {
+          trait_type: "Name",
+          value: data.journalist_first_name + data.journalist_last_name,
+        },
+        {
+          trait_type: "Category",
+          value: data.category,
+        },
+        {
+          trait_type: "Email",
+          value: data.journalist_email,
+        },
+        {
+          trait_type: "Contact",
+          value: data.journalist_contact,
+        },
+        {
+          trait_type: "Username",
+          value: data.journalist_username,
+        },
+        {
+          display_type: "date",
+          trait_type: "Journalist Joined Date",
+          value: Math.floor(Date.now() / 1000),
+          // value: Math.floor(new Date(data.issueDate).getTime() / 1000),
+        },
+      ],
+    };
+
+    const cid = await uploadFile(fileName, JSON.stringify(selectedData));
+
+    if (!cid) {
+      throw new Error("Failed to upload file to IPFS.");
+    }
+
+    return cid;
+  } catch (error) {
+    console.error("Error creating and uploading file for journalist:", error);
     throw error;
   }
 };
@@ -173,10 +230,11 @@ const sendCertificateTxnForOrg = async (walletAddress, data) => {
       data.org_username,
       uri
     );
-    const defaultGasLimit = 500000;
-    console.log("the estimated gas is: ", gasAmount);
 
-    const gasLimit = gasAmount.toNumberSafe() || defaultGasLimit;
+    const defaultGasLimit = 5000000;
+    console.log("the estimated gas is: ", gasAmount.toNumber());
+
+    const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
     const tx = await testNewsContract.sendCertificate(
       walletAddress,
@@ -223,10 +281,157 @@ const sendCertificateTxnForOrg = async (walletAddress, data) => {
     };
   }
 };
+const sendCertificateTxnForJournalist = async (walletAddress, data) => {
+  try {
+    if (!walletAddress || !data) {
+      return {
+        success: false,
+        error: "Invalid parameters. Wallet and data are required.",
+      };
+    }
+
+    // Upload data to pinata
+    const cid = await createFileAndUploadForJournalist(data);
+
+    if (!cid) {
+      throw new Error("Failed to obtain CID for the data file.");
+    }
+
+    const uri = `https://ipfs.io/ipfs/${cid}`;
+
+    console.log("The URI is ", uri);
+
+    const gasAmount = await testNewsContract.estimateGas.sendCertificate(
+      walletAddress,
+      data.journalist_username,
+      uri
+    );
+
+    const defaultGasLimit = 5000000;
+    console.log("the estimated gas is: ", gasAmount.toNumber());
+
+    const gasLimit = gasAmount.toNumber() || defaultGasLimit;
+
+    const tx = await testNewsContract.sendCertificate(
+      walletAddress,
+      data.journalist_username,
+      uri,
+      {
+        gasLimit: gasLimit,
+      }
+    );
+
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+
+    // Find the emitted event in the logs
+    const transferEvent = receipt.events.find(
+      (event) => event.event === "transfer"
+    );
+
+    if (transferEvent) {
+      const tokenId = transferEvent.args.tokenId.toString();
+
+      console.log(
+        `Token ID: ${tokenId} minted to ${walletAddress} with transaction hash ${tx.hash}`
+      );
+
+      return {
+        success: true,
+        journalistId: tokenId,
+        jsonData: uri,
+        txnHash: tx.hash,
+      };
+    } else {
+      console.log("Event not found in transaction logs");
+      return {
+        success: false,
+        error: "Event not found in transaction logs",
+      };
+    }
+  } catch (error) {
+    console.error("Error in sendCertificateTxnForJournalist: ", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+const submitNewsTxn = async (walletAddress, data) => {
+  try {
+    if (!walletAddress || !data) {
+      return {
+        success: false,
+        error: "Invalid parameters. Wallet and data are required.",
+      };
+    }
+
+    // Upload data to pinata
+    const cid = await uploadFile(data.news_authors[0], JSON.stringify(data));
+    // await cid.toString();
+
+    if (!cid) {
+      throw new Error("Failed to obtain CID for the data file.");
+    }
+
+    const uri = `https://ipfs.io/ipfs/${cid}`;
+
+    console.log("The URI is ", uri);
+
+    const gasAmount = await testNewsContract.estimateGas.submitNews(cid);
+
+    const defaultGasLimit = 5000000;
+    console.log("the estimated gas is: ", gasAmount.toNumber());
+
+    const gasLimit = gasAmount.toNumber() || defaultGasLimit;
+
+    const tx = await testNewsContract.submitNews(cid, {
+      gasLimit: gasLimit,
+    });
+
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+
+    // Find the emitted event in the logs
+    const storedLatestNewsEvent = receipt.events.find(
+      (event) => event.event === "storedLatestNews"
+    );
+
+    if (storedLatestNewsEvent) {
+      const cidInBytes = storedLatestNewsEvent.args.data;
+
+      console.log(
+        `Uploaded CID to Blockchain: CID: ${cid} & Data in Bytes: ${cidInBytes} with transaction hash ${tx.hash}`
+      );
+
+      return {
+        success: true,
+        newsId: cid,
+        newdIdInBytes: cidInBytes,
+        jsonData: uri,
+        txnHash: tx.hash,
+      };
+    } else {
+      console.log("Event not found in transaction logs");
+      return {
+        success: false,
+        error: "Event not found in transaction logs",
+      };
+    }
+  } catch (error) {
+    console.error("Error in submitNewsTxn: ", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
 
 module.exports = {
   generateUniqueOrgIdTxn,
   generateUniqueJournalistIdTxn,
   createFileAndUploadForOrg,
   sendCertificateTxnForOrg,
+  sendCertificateTxnForJournalist,
+  submitNewsTxn,
 };
