@@ -16,19 +16,34 @@ const storeOrganisationRegisterDetails = async (data) => {
     console.error("Unable to Run storeOrganisationsDetails: ", error);
   }
 };
-const storeJournalistDetails = async (data) => {
+const storeJournalistRegisterDetails = async (data) => {
   try {
     const client = await connectMongo();
     const db = client.db("Xcheck_db");
-    const collection = db.collection("organizations");
+    const collection = db.collection("journalists");
 
-    const journalistDetails = collection.insertOne(data);
+    const journalistDetails = await collection.insertOne(data);
 
     console.log("Stored Journalist Details", journalistDetails);
 
     await client.close();
   } catch (error) {
-    console.error("Unable to Run storeJournalistDetails: ", error);
+    console.error("Unable to Run storeJournalistRegisterDetails: ", error);
+  }
+};
+const storeNewsDetails = async (data) => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("news");
+
+    const newsDetails = await collection.insertOne(data);
+
+    console.log("Stored News Details", newsDetails);
+
+    await client.close();
+  } catch (error) {
+    console.error("Unable to Run storeNewsDetails: ", error);
   }
 };
 const fetchLoginDetails = async () => {};
@@ -55,13 +70,30 @@ const fetchJournalistsDetails = async () => {
     const db = client.db("Xcheck_db");
     const collection = db.collection("journalists");
 
-    const orgsCursor = collection.find().sort({ _id: -1 });
-    const orgsArray = await orgsCursor.toArray();
+    const journalistsCursor = collection.find().sort({ _id: -1 });
+    const journalistsArray = await journalistsCursor.toArray();
 
-    console.log("Fetched Journalists", orgsArray[0]);
+    console.log("Fetched Journalists", journalistsArray[0]);
 
     await client.close();
-    return orgsArray;
+    return journalistsArray;
+  } catch (error) {
+    console.error("Unable to Run fetchJournalistsDetails: ", error);
+  }
+};
+const fetchNews = async () => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("news");
+
+    const newsCursor = collection.find().sort({ _id: -1 });
+    const newsArray = await newsCursor.toArray();
+
+    console.log("Fetched Journalists", newsArray[0]);
+
+    await client.close();
+    return newsArray;
   } catch (error) {
     console.error("Unable to Run fetchJournalistsDetails: ", error);
   }
@@ -69,8 +101,10 @@ const fetchJournalistsDetails = async () => {
 
 module.exports = {
   storeOrganisationRegisterDetails,
-  storeJournalistDetails,
+  storeJournalistRegisterDetails,
   fetchLoginDetails,
   fetchOrganisationsDetails,
   fetchJournalistsDetails,
+  storeNewsDetails,
+  fetchNews,
 };

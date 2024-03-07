@@ -62,7 +62,7 @@ const fetchWalletDetails = async () => {
     const walletCursor = collection.find().sort({ _id: -1 });
     const walletsArray = await walletCursor.toArray();
 
-    console.log("Fetched Organisations", walletsArray[0]);
+    console.log("Fetched Wallet: ", walletsArray[0]);
 
     await client.close();
     return walletsArray[0];
