@@ -94,10 +94,40 @@ const { error: journalistValidateError, value: journalistValidateValue } =
     journalist_password: "exampleJournalistPassword",
   });
 
+const NewsDetailsSchema = Joi.object({
+  news_language: Joi.string().required().label("news_language"),
+  news_title: Joi.string().required().label("news_title"),
+  news_short_description: Joi.string()
+    .optional()
+    .label("news_short_description"),
+  news_category: Joi.string().required().label("news_category"),
+  news_tags: Joi.array().items(Joi.string()).required().label("news_tags"),
+  news_content: Joi.string().required().label("news_content"),
+  news_authors: Joi.array()
+    .items(Joi.string().required())
+    .label("news_authors"),
+  news_image: Joi.array().items(Joi.string()).label("news_image"),
+  is_news_published: Joi.boolean().required().label("is_news_published"),
+  news_published_link: Joi.when("is_news_published", {
+    is: Joi.boolean().valid(true).required(),
+    then: Joi.string().required().label("news_published_link"),
+    otherwise: Joi.string().optional().allow(null).label("news_published_link"),
+  }),
+  published_timestamp: Joi.when("is_news_published", {
+    is: Joi.boolean().valid(true).required(),
+    then: Joi.number().integer().required().label("published_timestamp"),
+    otherwise: Joi.number()
+      .integer()
+      .optional()
+      .allow(null)
+      .label("published_timestamp"),
+  }),
+}).options({ abortEarly: false });
 module.exports = {
   LoginSchema,
   OrgRegistrationSchema,
   JournalistRegistrationSchema,
   OrgLoginSchema,
   JournalistLoginSchema,
+  NewsDetailsSchema,
 };
