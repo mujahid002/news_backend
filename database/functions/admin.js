@@ -71,6 +71,52 @@ const fetchWalletDetails = async () => {
   }
 };
 
+const fetchOrganizationDetailsFromId = async (objectId) => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("organizations");
+
+    const data = await collection.findOne({ _id: objectId });
+    console.log("Fetched Organization data from ObjectId: ", data);
+
+    await client.close();
+    return data;
+  } catch (error) {
+    console.error("Unable to run fetchOrganizationDetailsFromId: ", error);
+  }
+};
+const fetchJournalistDetailsFromId = async (objectId) => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("journalists");
+
+    const data = await collection.findOne({ _id: objectId });
+    console.log("Fetched Journalist data from ObjectId: ", data);
+
+    await client.close();
+    return data;
+  } catch (error) {
+    console.error("Unable to run fetchJournalistDetailsFromId: ", error);
+  }
+};
+const fetchNewsDetailsFromId = async (objectId) => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("news");
+
+    const data = await collection.findOne({ _id: objectId });
+    console.log("Fetched News data from ObjectId: ", data);
+
+    await client.close();
+    return data;
+  } catch (error) {
+    console.error("Unable to run fetchNewsDetailsFromId: ", error);
+  }
+};
+
 // Example usage
 const walletsArray = [
   {
@@ -88,4 +134,11 @@ const walletsArray = [
 //   "1847f5b9f27a33f004471d310fdf94340f59b5134e1aee8eeb4ab3a6e8defe43"
 // );
 
-module.exports = { storeWallet, storeWallets, fetchWalletDetails };
+module.exports = {
+  storeWallet,
+  storeWallets,
+  fetchWalletDetails,
+  fetchOrganizationDetailsFromId,
+  fetchJournalistDetailsFromId,
+  fetchNewsDetailsFromId,
+};

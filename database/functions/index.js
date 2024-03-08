@@ -7,7 +7,7 @@ const storeOrganisationRegisterDetails = async (data) => {
     const db = client.db("Xcheck_db");
     const collection = db.collection("organizations");
 
-    const filter = { org_username: data.org_username };
+    const filter = { _id: data._id };
 
     const updateResult = await collection.updateOne(
       filter,
@@ -20,6 +20,7 @@ const storeOrganisationRegisterDetails = async (data) => {
     await client.close();
   } catch (error) {
     console.error("Unable to run storeOrganisationsDetails: ", error);
+    throw error;
   }
 };
 
@@ -29,7 +30,7 @@ const storeJournalistRegisterDetails = async (data) => {
     const db = client.db("Xcheck_db");
     const collection = db.collection("journalists");
 
-    const filter = { journalist_username: data.journalist_username };
+    const filter = { _id: data._id };
 
     const updateResult = await collection.updateOne(
       filter,
@@ -50,7 +51,7 @@ const storeNewsDetails = async (data) => {
     const db = client.db("Xcheck_db");
     const collection = db.collection("news");
 
-    const filter = { news_authors: data.news_authors };
+    const filter = { _id: data._id };
 
     const updateResult = await collection.updateOne(
       filter,
