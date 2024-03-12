@@ -161,10 +161,68 @@ const submitNewsController = async (req, res) => {
     res.status(500).send({ code: 500, message: "Internal Server Error" });
   }
 };
+const updateNewsController = async (req, res) => {
+  try {
+    const { old_id, new_id } = req.body;
+
+    if (
+      old_id &&
+      typeof old_id === "string" &&
+      ObjectId.isValid(old_id) &&
+      new_id &&
+      typeof new_id === "string" &&
+      ObjectId.isValid(new_id)
+    ) {
+      const oldObjectId = new ObjectId(old_id);
+      const newObjectId = new ObjectId(new_id);
+      // const oldNews = await fetchNewsDetailsFromId(oldObjectId);
+      const news = await fetchNewsDetailsFromId(newObjectId);
+      const newsDetails = {
+        _id: oldObjectId,
+        new_mongo_id: newObjectId,
+      };
+
+      const generateNewsIdResponse = await submitNewsTxn(news);
+
+      if (generateNewsIdResponse.success) {
+        const newNewsDetails = {
+          ...newsDetails,
+          updated_news_published_wallet_address:
+            news.news_published_wallet_address ||
+            "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
+          updated_news_pinata_id: generateNewsIdResponse.newsId,
+          // news_id_inBytes: generateNewsIdResponse.newdIdInBytes,
+          updated_news_pinata_uri: generateNewsIdResponse.jsonData,
+          updated_news_transaction_id: generateNewsIdResponse.txnHash,
+        };
+
+        await storeNewsDetails(newNewsDetails);
+
+        // Sending a single argument or an array of arguments
+        res.status(200).json({
+          updatedMongo_WithThisLatestData_InOldMongoId: newNewsDetails,
+        });
+        return;
+      } else {
+        res.status(500).send({ code: 500, message: "Internal Server Error" });
+        return;
+      }
+    } else {
+      res
+        .status(500)
+        .send({ code: 500, message: "Internal server error: Invalid _id" });
+      return;
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ code: 500, message: "Internal Server Error" });
+  }
+};
 
 module.exports = {
   loginController,
   orgRegisterController,
   journalistRegisterController,
   submitNewsController,
+  updateNewsController,
 };
