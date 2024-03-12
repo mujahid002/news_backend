@@ -52,6 +52,29 @@ const storeWallets = async (walletsArray) => {
     console.error("Unable to store wallets: ", error);
   }
 };
+const updateNews = async (objectId) => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("news");
+
+    const formattedWalletsArray = walletsArray.map((wallet) => ({
+      _id: new ObjectId(),
+      address: wallet.address,
+      key: wallet.key,
+    }));
+
+    const storeWalletDetails = await collection.insertMany(
+      formattedWalletsArray
+    );
+
+    console.log("Stored wallet details are: ", storeWalletDetails);
+
+    await client.close();
+  } catch (error) {
+    console.error("Unable to store wallets: ", error);
+  }
+};
 
 const fetchWalletDetails = async () => {
   try {

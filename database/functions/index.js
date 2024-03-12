@@ -89,6 +89,43 @@ const fetchOrganisationsDetails = async () => {
     console.error("Unable to Run fetchOrganisationsDetails: ", error);
   }
 };
+const fetchOrganisationsUsingOrgCategory = async (orgCategory) => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("organizations");
+
+    const orgsArray = await collection
+      .find({ org_category: orgCategory })
+      .toArray();
+
+    console.log("Fetched Organisations by Org Type:", orgCategory);
+
+    await client.close();
+    return orgsArray;
+  } catch (error) {
+    console.error("Unable to run fetchOrganisationsUsingOrgCategory: ", error);
+  }
+};
+const fetchNewsUsingNewsLanguage = async (newsLanguage) => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("news");
+
+    const newsArray = await collection
+      .find({ news_language: newsLanguage })
+      .toArray();
+
+    console.log("Fetched news by News Language:", newsLanguage);
+
+    await client.close();
+    return newsArray;
+  } catch (error) {
+    console.error("Unable to run fetchNewsUsingNewsLanguage: ", error);
+  }
+};
+
 const fetchJournalistsDetails = async () => {
   try {
     const client = await connectMongo();
@@ -132,4 +169,6 @@ module.exports = {
   fetchJournalistsDetails,
   storeNewsDetails,
   fetchNews,
+  fetchOrganisationsUsingOrgCategory,
+  fetchNewsUsingNewsLanguage,
 };
