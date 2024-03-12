@@ -3,99 +3,6 @@ const ethers = require("ethers");
 const { testNewsContract } = require("../constants/index.js");
 const uploadFile = require("../services/pinata.js");
 
-const generateUniqueOrgIdTxn = async (walletAddress, userName) => {
-  try {
-    if (!walletAddress || !userName) {
-      return {
-        success: false,
-        error: "Invalid parameters. Wallet and userName are required.",
-      };
-    }
-
-    const gasAmount = await testNewsContract.estimateGas.generateTokenId(
-      walletAddress,
-      userName
-    );
-
-    // call function
-    const defaultGasLimit = 500000;
-
-    const uniqueOrgIdInBigNumber = await testNewsContract.generateTokenId(
-      walletAddress,
-      userName,
-      {
-        gasLimit: gasAmount.toNumber() || defaultGasLimit,
-      }
-    );
-
-    await uniqueOrgIdInBigNumber;
-
-    const uniqueOrgId = ethers.BigNumber.from(
-      uniqueOrgIdInBigNumber
-    ).toString();
-
-    console.log(
-      `Unique org ID: ${uniqueOrgId} generated to ${walletAddress} & ${userName}`
-    );
-
-    return {
-      success: true,
-      orgId: uniqueOrgId,
-    };
-  } catch (error) {
-    console.error("Error in generateUniqueOrgIdTxn: ", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-};
-const generateUniqueJournalistIdTxn = async (walletAddress, userName) => {
-  try {
-    if (!walletAddress || !userName) {
-      return {
-        success: false,
-        error: "Invalid parameters. Wallet and userName are required.",
-      };
-    }
-
-    const gasAmount = await testNewsContract.estimateGas.generateTokenId(
-      walletAddress,
-      userName
-    );
-
-    // call function
-    const defaultGasLimit = 500000;
-
-    const uniqueJournalistIdInBigNumber =
-      await testNewsContract.generateTokenId(walletAddress, userName, {
-        gasLimit: gasAmount.toNumber() || defaultGasLimit,
-      });
-
-    await uniqueJournalistIdInBigNumber;
-
-    const uniqueJournalistId = ethers.BigNumber.from(
-      uniqueJournalistIdInBigNumber
-    ).toString();
-
-    console.log(
-      `Unique journalist ID: ${uniqueJournalistId} generated to ${walletAddress} & ${userName}`
-    );
-
-    return {
-      success: true,
-      journalistId: uniqueJournalistId,
-    };
-  } catch (error) {
-    console.error("Error in generateUniqueJournalistIdTxn: ", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-};
-// generateUniqueOrgIdTxn("0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5", "Mujahid");
-
 const createFileAndUploadForOrg = async (data) => {
   try {
     const fileName = `${data.org_username}.json`;
@@ -434,12 +341,175 @@ const submitNewsTxn = async (data) => {
     };
   }
 };
+// const updateNewsTxn = async (data) => {
+//   try {
+//     if (!data) {
+//       return {
+//         success: false,
+//         error: "Invalid parameters. Wallet and data are required.",
+//       };
+//     }
+
+//     // Upload data to pinata
+//     const cid = await uploadFile(data.news_authors[0], JSON.stringify(data));
+//     // await cid.toString();
+
+//     if (!cid) {
+//       throw new Error("Failed to obtain CID for the data file.");
+//     }
+
+//     const uri = `https://ipfs.io/ipfs/${cid}`;
+
+//     console.log("The URI is ", uri);
+
+//     const gasAmount = await testNewsContract.estimateGas.submitNews(cid);
+
+//     const defaultGasLimit = 5000000;
+//     console.log("the estimated gas is: ", gasAmount.toNumber());
+
+//     const gasLimit = gasAmount.toNumber() || defaultGasLimit;
+
+//     const tx = await testNewsContract.submitNews(cid, {
+//       gasLimit: gasLimit,
+//     });
+
+//     // Wait for the transaction to be mined
+//     const receipt = await tx.wait();
+
+//     // Find the emitted event in the logs
+//     const storedLatestNewsEvent = receipt.events.find(
+//       (event) => event.event === "storedLatestNews"
+//     );
+
+//     if (storedLatestNewsEvent) {
+//       const cidInBytes = storedLatestNewsEvent.args.data;
+
+//       console.log(
+//         `Uploaded CID to Blockchain: CID: ${cid} & Data in Bytes: ${cidInBytes} with transaction hash ${tx.hash}`
+//       );
+
+//       return {
+//         success: true,
+//         newsId: cid,
+//         newdIdInBytes: cidInBytes,
+//         jsonData: uri,
+//         txnHash: tx.hash,
+//       };
+//     } else {
+//       console.log("Event not found in transaction logs");
+//       return {
+//         success: false,
+//         error: "Event not found in transaction logs",
+//       };
+//     }
+//   } catch (error) {
+//     console.error("Error in updateNewsTxn: ", error);
+//     return {
+//       success: false,
+//       error: error.message,
+//     };
+//   }
+// };
+
+// const generateUniqueOrgIdTxn = async (walletAddress, userName) => {
+//   try {
+//     if (!walletAddress || !userName) {
+//       return {
+//         success: false,
+//         error: "Invalid parameters. Wallet and userName are required.",
+//       };
+//     }
+
+//     const gasAmount = await testNewsContract.estimateGas.generateTokenId(
+//       walletAddress,
+//       userName
+//     );
+
+//     // call function
+//     const defaultGasLimit = 500000;
+
+//     const uniqueOrgIdInBigNumber = await testNewsContract.generateTokenId(
+//       walletAddress,
+//       userName,
+//       {
+//         gasLimit: gasAmount.toNumber() || defaultGasLimit,
+//       }
+//     );
+
+//     await uniqueOrgIdInBigNumber;
+
+//     const uniqueOrgId = ethers.BigNumber.from(
+//       uniqueOrgIdInBigNumber
+//     ).toString();
+
+//     console.log(
+//       `Unique org ID: ${uniqueOrgId} generated to ${walletAddress} & ${userName}`
+//     );
+
+//     return {
+//       success: true,
+//       orgId: uniqueOrgId,
+//     };
+//   } catch (error) {
+//     console.error("Error in generateUniqueOrgIdTxn: ", error);
+//     return {
+//       success: false,
+//       error: error.message,
+//     };
+//   }
+// };
+// const generateUniqueJournalistIdTxn = async (walletAddress, userName) => {
+//   try {
+//     if (!walletAddress || !userName) {
+//       return {
+//         success: false,
+//         error: "Invalid parameters. Wallet and userName are required.",
+//       };
+//     }
+
+//     const gasAmount = await testNewsContract.estimateGas.generateTokenId(
+//       walletAddress,
+//       userName
+//     );
+
+//     // call function
+//     const defaultGasLimit = 500000;
+
+//     const uniqueJournalistIdInBigNumber =
+//       await testNewsContract.generateTokenId(walletAddress, userName, {
+//         gasLimit: gasAmount.toNumber() || defaultGasLimit,
+//       });
+
+//     await uniqueJournalistIdInBigNumber;
+
+//     const uniqueJournalistId = ethers.BigNumber.from(
+//       uniqueJournalistIdInBigNumber
+//     ).toString();
+
+//     console.log(
+//       `Unique journalist ID: ${uniqueJournalistId} generated to ${walletAddress} & ${userName}`
+//     );
+
+//     return {
+//       success: true,
+//       journalistId: uniqueJournalistId,
+//     };
+//   } catch (error) {
+//     console.error("Error in generateUniqueJournalistIdTxn: ", error);
+//     return {
+//       success: false,
+//       error: error.message,
+//     };
+//   }
+// };
+// // generateUniqueOrgIdTxn("0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5", "Mujahid");
 
 module.exports = {
-  generateUniqueOrgIdTxn,
-  generateUniqueJournalistIdTxn,
+  // generateUniqueOrgIdTxn,
+  // generateUniqueJournalistIdTxn,
   createFileAndUploadForOrg,
   sendCertificateTxnForOrg,
   sendCertificateTxnForJournalist,
   submitNewsTxn,
+  // updateNewsTxn,
 };
