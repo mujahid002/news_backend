@@ -70,6 +70,74 @@ const storeNewsDetails = async (data) => {
     console.error("Error in storeNewsDetails: ", error);
   }
 };
+const storeNewsDetailsOfNewId = async (data) => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("news");
+
+    const filter = { _id: data.new_mongo_id };
+    const { _id, ...updateData } = data; // Exclude _id from updateData
+
+    const updateResult = await collection.updateOne(
+      filter,
+      { $set: updateData },
+      { upsert: true }
+    );
+
+    console.log("Update Result:", updateResult);
+
+    if (updateResult.modifiedCount === 0 && updateResult.upsertedCount === 0) {
+      console.log("No document matched the filter criteria.");
+    }
+
+    await client.close();
+  } catch (error) {
+    console.error("Error in storeNewsDetailsOfNewId: ", error);
+  }
+};
+
+const storeUpdatedNewsDetails = async (data) => {
+  try {
+    const client = await connectMongo();
+    const db = client.db("Xcheck_db");
+    const collection = db.collection("news");
+
+    const filter = { _id: data._id };
+
+    const updateResult = await collection.updateOne(
+      filter,
+      {
+        $set: {
+          news_published_latest_wallet_address:
+            data.news_published_latest_wallet_address,
+          news_latest_pinata_id: data.news_latest_pinata_id,
+          news_latest_pinata_uri: data.news_latest_pinata_uri,
+          news_latest_transaction_id: data.news_latest_transaction_id,
+        },
+        $push: {
+          news_published_wallet_addresses:
+            data.news_published_latest_wallet_address,
+          news_pinata_ids: data.news_latest_pinata_id,
+          // news_id_inBytes: data.news_latest_id_inBytes,
+          news_pinata_uris: data.news_latest_pinata_uri,
+          news_transaction_ids: data.news_latest_transaction_id,
+        },
+      },
+      { upsert: true }
+    );
+
+    console.log("Update Result:", updateResult);
+
+    if (updateResult.modifiedCount === 0 && updateResult.upsertedCount === 0) {
+      console.log("No document matched the filter criteria.");
+    }
+
+    await client.close();
+  } catch (error) {
+    console.error("Error in storeUpdatedNewsDetails: ", error);
+  }
+};
 
 const fetchLoginDetails = async () => {};
 const fetchOrganisationsDetails = async () => {
@@ -171,4 +239,6 @@ module.exports = {
   fetchNews,
   fetchOrganisationsUsingOrgCategory,
   fetchNewsUsingNewsLanguage,
+  storeUpdatedNewsDetails,
+  storeNewsDetailsOfNewId,
 };

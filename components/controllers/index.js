@@ -3,6 +3,8 @@ const {
   storeOrganisationRegisterDetails,
   storeJournalistRegisterDetails,
   storeNewsDetails,
+  storeNewsDetailsOfNewId,
+  storeUpdatedNewsDetails,
 } = require("../../database/functions/index");
 const {
   fetchOrganizationDetailsFromId,
@@ -130,13 +132,21 @@ const submitNewsController = async (req, res) => {
       if (generateNewsIdResponse.success) {
         const newNewsDetails = {
           ...newsDetails,
-          news_published_wallet_address:
-            news.news_published_wallet_address ||
+          news_published_latest_wallet_address:
+            news.news_published_latest_wallet_address ||
             "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
-          news_pinata_id: generateNewsIdResponse.newsId,
+          news_latest_pinata_id: generateNewsIdResponse.newsId,
           // news_id_inBytes: generateNewsIdResponse.newdIdInBytes,
-          news_pinata_uri: generateNewsIdResponse.jsonData,
-          news_transaction_id: generateNewsIdResponse.txnHash,
+          news_latest_pinata_uri: generateNewsIdResponse.jsonData,
+          news_latest_transaction_id: generateNewsIdResponse.txnHash,
+          news_published_wallet_addresses: [
+            news.news_published_latest_wallet_address ||
+              "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
+          ],
+          news_pinata_ids: [generateNewsIdResponse.newsId],
+          // news_id_inBytes: generateNewsIdResponse.newdIdInBytes,
+          news_pinata_uris: [generateNewsIdResponse.jsonData],
+          news_transaction_ids: [generateNewsIdResponse.txnHash],
         };
 
         await storeNewsDetails(newNewsDetails);
@@ -187,16 +197,17 @@ const updateNewsController = async (req, res) => {
       if (generateNewsIdResponse.success) {
         const newNewsDetails = {
           ...newsDetails,
-          updated_news_published_wallet_address:
-            news.news_published_wallet_address ||
+          news_published_latest_wallet_address:
+            news.news_published_latest_wallet_address ||
             "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
-          updated_news_pinata_id: generateNewsIdResponse.newsId,
+          news_latest_pinata_id: generateNewsIdResponse.newsId,
           // news_id_inBytes: generateNewsIdResponse.newdIdInBytes,
-          updated_news_pinata_uri: generateNewsIdResponse.jsonData,
-          updated_news_transaction_id: generateNewsIdResponse.txnHash,
+          news_latest_pinata_uri: generateNewsIdResponse.jsonData,
+          news_latest_transaction_id: generateNewsIdResponse.txnHash,
         };
 
-        await storeNewsDetails(newNewsDetails);
+        await storeNewsDetailsOfNewId(newNewsDetails);
+        await storeUpdatedNewsDetails(newNewsDetails);
 
         // Sending a single argument or an array of arguments
         res.status(200).json({
