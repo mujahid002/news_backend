@@ -77,7 +77,10 @@ const storeNewsDetailsOfNewId = async (data) => {
     const collection = db.collection("news");
 
     const filter = { _id: data.new_mongo_id };
-    const { _id, ...updateData } = data; // Exclude _id from updateData
+    const { _id, new_mongo_id, ...updateData } = data; // Exclude _id from updateData
+    // if (data.new_mongo_id) {
+    //   const { new_mongo_id, ...updateData } = data;
+    // }
 
     const updateResult = await collection.updateOne(
       filter,
@@ -116,10 +119,10 @@ const storeUpdatedNewsDetails = async (data) => {
           news_latest_transaction_id: data.news_latest_transaction_id,
         },
         $push: {
+          news_child_mongo_ids: data.new_mongo_id,
           news_published_wallet_addresses:
             data.news_published_latest_wallet_address,
           news_pinata_ids: data.news_latest_pinata_id,
-          // news_id_inBytes: data.news_latest_id_inBytes,
           news_pinata_uris: data.news_latest_pinata_uri,
           news_transaction_ids: data.news_latest_transaction_id,
         },

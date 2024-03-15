@@ -13,6 +13,7 @@ const {
   journalistRegisterController,
   submitNewsController,
   updateNewsController,
+  factCheckController,
 } = require("../controllers/index.js");
 const {
   LoginSchema,
@@ -50,6 +51,11 @@ apiRouter.post(
   "/news/update-news",
   // validateSchema(NewsDetailsSchema),
   updateNewsController
+);
+apiRouter.post(
+  "/news/fact-check",
+  // validateSchema(NewsDetailsSchema),
+  factCheckController
 );
 apiRouter.get("/organizations", async (req, res) => {
   const orgCategory = req.query.org_category;
