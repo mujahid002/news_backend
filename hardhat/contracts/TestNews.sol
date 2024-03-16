@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-// import {ERC721, IERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721, ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
@@ -13,8 +12,11 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 // Custom error messages
 error News__AlreadyUserHaveCertificate();
 error News__TokenIdDoesNotExists();
+error News__CidDoesNotExists();
 error News__UserCannotBurnCertificate();
+error News__UserDoesNotHaveEnoughRole();
 error News__UserCannotTransferCertificate();
+error News__ZeroPublishedContent();
 
 // TestWallet Contract
 contract TestNews is
@@ -27,14 +29,17 @@ contract TestNews is
     // Bytes32 for Access Control Roles
     bytes32 public constant NEWS_PUBLISHER_ROLE =
         keccak256("NEWS_PUBLISHER_ROLE");
+    bytes32 public constant NEWS_PUBLISHER_ROLE_IN_ORG =
+        keccak256("NEWS_PUBLISHER_ROLE_IN_ORG");
     bytes32 public constant NEWS_FACT_CHECKER_ROLE =
         keccak256("NEWS_FACT_CHECKER_ROLE");
 
     // Mapping: tokenId is mapped with Array of Strings, array elements indicates CID
-    mapping(uint256 => string[]) private s_newsData;
+    mapping(uint256 => string[]) private s_tokenIdToNewsData;
 
-    // Mapping: string is mapped with Array of Strings, array elements indicates fect checked CID for a particular CID
-    mapping(string => string[]) private s_factCheckerNews;
+    mapping(uint256 => string[]) private s_tokenIdToCheckedData;
+
+    mapping(string => string[]) private s_cidToFactCheckerCids;
 
     // Mapping: tokenId is mapped with Array of journalist tokenIds
     mapping(uint256 => uint256[]) private s_publishersInOrg;
@@ -56,11 +61,12 @@ contract TestNews is
     constructor() ERC721("TestNewsToken", "TNT") {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(NEWS_PUBLISHER_ROLE, _msgSender());
+        _grantRole(NEWS_PUBLISHER_ROLE_IN_ORG, _msgSender());
         _grantRole(NEWS_FACT_CHECKER_ROLE, _msgSender());
     }
 
     /**************************
-        TESTING PURPOSES
+       DEVELOPER TESTING PURPOSES
     ***************************/
     function fetchUserTokenIds(address _userAddress)
         public
@@ -96,21 +102,24 @@ contract TestNews is
      */
     function issueCertificate(
         address _to,
-        bool IsfactChecker,
+        // bool IsfactChecker,
         string calldata userName,
         string calldata _tokenURI
     ) public whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) {
         // for testing purposes removed check...
         // if (checkAddressHaveCertificate(_to))
         //     revert News__AlreadyUserHaveCertificate();
+        // if(hasRole(NEWS_FACT_CHECKER_ROLE, _to) || hasRole(NEWS_PUBLISHER_ROLE, _to)) revert News__AlreadyUserHaveCertificate();
         uint256 tokenId = generateTokenId(_to, userName);
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _tokenURI);
-        if (IsfactChecker) {
+        // if (IsfactChecker) {
+        //     _grantRole(NEWS_FACT_CHECKER_ROLE, _to);
+        // } else {
+        //     _grantRole(NEWS_PUBLISHER_ROLE, _to);
+        // }
             _grantRole(NEWS_FACT_CHECKER_ROLE, _to);
-        } else {
             _grantRole(NEWS_PUBLISHER_ROLE, _to);
-        }
         emit transfer(_msgSender(), _to, tokenId);
     }
 
@@ -126,15 +135,49 @@ contract TestNews is
         address userAddress = ownerOf(tokenId);
         if (userAddress == address(0)) revert News__TokenIdDoesNotExists();
         if (IsfactChecker) {
-            if (!hasRole(NEWS_FACT_CHECKER_ROLE, userAddress)) revert();
+            if (!hasRole(NEWS_FACT_CHECKER_ROLE, userAddress)) revert News__UserDoesNotHaveEnoughRole();
+            _revokeRole(NEWS_FACT_CHECKER_ROLE, userAddress);
             _burn(tokenId);
-            _revokeRole(NEWS_FACT_CHECKER_ROLE, ownerOf(tokenId));
         } else {
-            if (!hasRole(NEWS_PUBLISHER_ROLE, userAddress)) revert();
+            if (!hasRole(NEWS_PUBLISHER_ROLE, userAddress)) revert News__UserDoesNotHaveEnoughRole();
+            _revokeRole(NEWS_PUBLISHER_ROLE, userAddress);
             _burn(tokenId);
-            _revokeRole(NEWS_PUBLISHER_ROLE, ownerOf(tokenId));
         }
     }
+
+    // function joinOrganisation(
+    //     uint256 orgTokenId,
+    //     address _to,
+    //     string calldata userName,
+    //     string calldata _tokenURI
+    // ) public whenNotPaused onlyRole(NEWS_PUBLISHER_ROLE) {
+    //     // for testing purposes removed check...
+    //     // if (checkAddressHaveCertificate(_to))
+    //     //     revert News__AlreadyUserHaveCertificate();
+    //     uint256 journalistTokenId = generateTokenId(_to, userName);
+    //     if (checkUserBelongsToSameOrg(orgTokenId, journalistTokenId)) revert News__ZeroPublishedContent();
+    //     _safeMint(_to, journalistTokenId);
+    //     _setTokenURI(journalistTokenId, _tokenURI);
+    //     _grantRole(NEWS_PUBLISHER_ROLE_IN_ORG, _to);
+
+    //     s_publishersInOrg[orgTokenId].push(journalistTokenId);
+
+    //     emit transfer(_msgSender(), _to, journalistTokenId);
+    // }
+
+    // function removeJournalistInORg(uint256 journalistTokenId)
+    //     public
+    //     whenNotPaused
+    //     onlyRole(NEWS_PUBLISHER_ROLE)
+    // {
+    //     address journalistAddress = ownerOf(journalistTokenId);
+    //     uint256 orgTokenId = getTokenIdOfAnUser(_msgSender());
+    //     if (journalistAddress == address(0))
+    //         revert News__TokenIdDoesNotExists();
+    //     if (!checkUserBelongsToSameOrg(orgTokenId, journalistTokenId)) revert News__ZeroPublishedContent();
+    //     _burn(journalistTokenId);
+    //     _revokeRole(NEWS_PUBLISHER_ROLE_IN_ORG, journalistAddress);
+    // }
 
     /**
      * @dev Store news content as a CID by Publisher.
@@ -147,7 +190,7 @@ contract TestNews is
     {
         uint256 tokenId = getTokenIdOfAnUser(_msgSender());
 
-        s_newsData[tokenId].push(newsCid);
+        s_tokenIdToNewsData[tokenId].push(newsCid);
         emit newsCidEvent(tokenId, newsCid, "");
     }
 
@@ -157,14 +200,19 @@ contract TestNews is
      * @param factNewsCid: CID of the fact checker news from IPFS to be stored on contract.
      */
 
-    function factChecker(string calldata newsCid, string calldata factNewsCid)
+    function factNotorize(uint256 publisherTokenId, string calldata newsCid, string calldata factNewsCid)
         public
         whenNotPaused
         onlyRole(NEWS_FACT_CHECKER_ROLE)
     {
+        if(!verifyCid(publisherTokenId, newsCid)) revert News__CidDoesNotExists();
+        // uint256 tokenId = getTokenIdOfAnUser(_msgSender());
         uint256 tokenId = getTokenIdOfAnUser(_msgSender());
 
-        s_factCheckerNews[newsCid].push(factNewsCid);
+
+        s_tokenIdToCheckedData[tokenId].push(newsCid);
+
+        s_cidToFactCheckerCids[newsCid].push(factNewsCid);
 
         emit newsCidEvent(tokenId, newsCid, factNewsCid);
     }
@@ -180,8 +228,8 @@ contract TestNews is
         view
         returns (bool)
     {
-        string[] memory cidArray = getAllNewsCids(tokenId);
-        if (cidArray.length == 0) revert();
+        string[] memory cidArray = getAllNewsCidsForTokenId(tokenId);
+        if (cidArray.length == 0) revert News__ZeroPublishedContent();
         bytes32 newsCidInBytes32 = keccak256(abi.encodePacked(newsCid));
         for (uint256 i = 0; i < cidArray.length; ++i) {
             if (newsCidInBytes32 == keccak256(abi.encodePacked(cidArray[i]))) {
@@ -195,8 +243,8 @@ contract TestNews is
         string calldata newsCid,
         string calldata factCheckerCid
     ) public view returns (bool) {
-        string[] memory cidArray = getAllFactCheckCids(newsCid);
-        if (cidArray.length == 0) revert();
+        string[] memory cidArray = getAllFactCheckCidsForNewsCid(newsCid);
+        if (cidArray.length == 0) revert News__ZeroPublishedContent();
         bytes32 factCheckerCidInBytes32 = keccak256(
             abi.encodePacked(factCheckerCid)
         );
@@ -249,9 +297,23 @@ contract TestNews is
         return uint256(keccak256(bytes(concatenatedString)));
     }
 
+    // function checkUserBelongsToSameOrg(uint256 orgTokenId, uint256 userTokenId)
+    //     public
+    //     view
+    //     returns (bool)
+    // {
+    //     uint256[] memory allPublishersInOrg = getAllPublishersInOrg(orgTokenId);
+    //     for (uint256 i = 0; i < allPublishersInOrg.length; ++i) {
+    //         if (userTokenId == allPublishersInOrg[i]) {
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
+
     function getLatestCid(uint256 tokenId) public view returns (string memory) {
-        string[] memory cidArray = getAllNewsCids(tokenId);
-        if (cidArray.length == 0) revert();
+        string[] memory cidArray = getAllNewsCidsForTokenId(tokenId);
+        if (cidArray.length == 0) revert News__ZeroPublishedContent();
         return cidArray[cidArray.length - 1];
     }
 
@@ -260,8 +322,8 @@ contract TestNews is
         view
         returns (string memory)
     {
-        string[] memory cidArray = getAllFactCheckCids(newsCid);
-        if (cidArray.length == 0) revert();
+        string[] memory cidArray = getAllFactCheckCidsForNewsCid(newsCid);
+        if (cidArray.length == 0) revert News__ZeroPublishedContent();
         return cidArray[cidArray.length - 1];
     }
 
@@ -281,22 +343,39 @@ contract TestNews is
      * @dev Get the news data (content identifiers) associated with a specific tokenId.
      * @param tokenId: The unique identifier of publisher.
      */
-    function getAllNewsCids(uint256 tokenId)
+    function getAllNewsCidsForTokenId(uint256 tokenId)
         public
         view
         returns (string[] memory)
     {
         // Retrieve news data in bytes associated with the given tokenId
-        return s_newsData[tokenId];
+        return s_tokenIdToNewsData[tokenId];
     }
 
-    function getAllFactCheckCids(string calldata newsCid)
+    function getAllCheckedCidsForTokenId(uint256 tokenId)
+        public
+        view
+        returns (string[] memory)
+    {
+        return s_tokenIdToCheckedData[tokenId];
+    }
+
+    function getAllFactCheckCidsForNewsCid(string calldata newsCid)
         public
         view
         returns (string[] memory)
     {
         // Retrieve fact check news data associated with the given newsCid
-        return s_factCheckerNews[newsCid];
+        return s_cidToFactCheckerCids[newsCid];
+    }
+
+    function getAllPublishersInOrg(uint256 tokenId)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        // Retrieve fact check news data associated with the given newsCid
+        return s_publishersInOrg[tokenId];
     }
 
     /**************************
