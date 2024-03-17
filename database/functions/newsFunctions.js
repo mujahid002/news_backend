@@ -1,50 +1,5 @@
 const connectMongo = require("../connectMongo");
 
-const storeLoginDetails = async () => {};
-const storeOrganisationRegisterDetails = async (data) => {
-  try {
-    const client = await connectMongo();
-    const db = client.db("Xcheck_db");
-    const collection = db.collection("organizations");
-
-    const filter = { _id: data._id };
-
-    const updateResult = await collection.updateOne(
-      filter,
-      { $set: data },
-      { upsert: true }
-    );
-
-    console.log("Update Result:", updateResult);
-
-    await client.close();
-  } catch (error) {
-    console.error("Unable to run storeOrganisationsDetails: ", error);
-    throw error;
-  }
-};
-
-const storeJournalistRegisterDetails = async (data) => {
-  try {
-    const client = await connectMongo();
-    const db = client.db("Xcheck_db");
-    const collection = db.collection("journalists");
-
-    const filter = { _id: data._id };
-
-    const updateResult = await collection.updateOne(
-      filter,
-      { $set: data },
-      { upsert: true }
-    );
-
-    console.log("Update Result:", updateResult);
-
-    await client.close();
-  } catch (error) {
-    console.error("Unable to Run storeJournalistRegisterDetails: ", error);
-  }
-};
 const storeNewsDetails = async (data) => {
   try {
     const client = await connectMongo();
@@ -142,42 +97,40 @@ const storeUpdatedNewsDetails = async (data) => {
   }
 };
 
-const fetchLoginDetails = async () => {};
-const fetchOrganisationsDetails = async () => {
+const fetchNews = async () => {
   try {
     const client = await connectMongo();
     const db = client.db("Xcheck_db");
-    const collection = db.collection("organizations");
+    const collection = db.collection("news");
 
-    const orgsCursor = collection.find().sort({ _id: -1 });
-    const orgsArray = await orgsCursor.toArray();
+    const newsCursor = collection.find().sort({ _id: -1 });
+    const newsArray = await newsCursor.toArray();
 
-    console.log("Fetched Organisations", orgsArray[0]);
+    console.log("Fetched Journalists", newsArray[0]);
 
     await client.close();
-    return orgsArray;
+    return newsArray;
   } catch (error) {
-    console.error("Unable to Run fetchOrganisationsDetails: ", error);
+    console.error("Unable to Run fetchJournalistsDetails: ", error);
   }
 };
-const fetchOrganisationsUsingOrgCategory = async (orgCategory) => {
+
+const fetchNewsDetailsFromId = async (objectId) => {
   try {
     const client = await connectMongo();
     const db = client.db("Xcheck_db");
-    const collection = db.collection("organizations");
+    const collection = db.collection("news");
 
-    const orgsArray = await collection
-      .find({ org_category: orgCategory })
-      .toArray();
-
-    console.log("Fetched Organisations by Org Type:", orgCategory);
+    const data = await collection.findOne({ _id: objectId });
+    console.log("Fetched News data from ObjectId: ", data);
 
     await client.close();
-    return orgsArray;
+    return data;
   } catch (error) {
-    console.error("Unable to run fetchOrganisationsUsingOrgCategory: ", error);
+    console.error("Unable to run fetchNewsDetailsFromId: ", error);
   }
 };
+
 const fetchNewsUsingNewsLanguage = async (newsLanguage) => {
   try {
     const client = await connectMongo();
@@ -197,51 +150,11 @@ const fetchNewsUsingNewsLanguage = async (newsLanguage) => {
   }
 };
 
-const fetchJournalistsDetails = async () => {
-  try {
-    const client = await connectMongo();
-    const db = client.db("Xcheck_db");
-    const collection = db.collection("journalists");
-
-    const journalistsCursor = collection.find().sort({ _id: -1 });
-    const journalistsArray = await journalistsCursor.toArray();
-
-    console.log("Fetched Journalists", journalistsArray[0]);
-
-    await client.close();
-    return journalistsArray;
-  } catch (error) {
-    console.error("Unable to Run fetchJournalistsDetails: ", error);
-  }
-};
-const fetchNews = async () => {
-  try {
-    const client = await connectMongo();
-    const db = client.db("Xcheck_db");
-    const collection = db.collection("news");
-
-    const newsCursor = collection.find().sort({ _id: -1 });
-    const newsArray = await newsCursor.toArray();
-
-    console.log("Fetched Journalists", newsArray[0]);
-
-    await client.close();
-    return newsArray;
-  } catch (error) {
-    console.error("Unable to Run fetchJournalistsDetails: ", error);
-  }
-};
-
 module.exports = {
-  storeOrganisationRegisterDetails,
-  storeJournalistRegisterDetails,
-  fetchLoginDetails,
-  fetchOrganisationsDetails,
-  fetchJournalistsDetails,
   storeNewsDetails,
-  fetchNews,
-  fetchOrganisationsUsingOrgCategory,
-  fetchNewsUsingNewsLanguage,
-  storeUpdatedNewsDetails,
   storeNewsDetailsOfNewId,
+  storeUpdatedNewsDetails,
+  fetchNews,
+  fetchNewsDetailsFromId,
+  fetchNewsUsingNewsLanguage,
 };

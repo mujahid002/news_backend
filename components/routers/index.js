@@ -2,19 +2,25 @@ const express = require("express");
 const connectMongo = require("../../database/connectMongo.js");
 const {
   fetchOrganisationsDetails,
-  fetchJournalistsDetails,
-  fetchNews,
   fetchOrganisationsUsingOrgCategory,
-  fetchNewsUsingNewsLanguage,
-} = require("../../database/functions/index.js");
+} = require("../../database/functions/orgFunctions.js");
 const {
-  loginController,
+  fetchJournalistsDetails,
+} = require("../../database/functions/journalistFunctions.js");
+const {
+  fetchNews,
+  fetchNewsUsingNewsLanguage,
+} = require("../../database/functions/newsFunctions.js");
+const { loginController } = require("../../controllers/index.js");
+const {
   orgRegisterController,
   journalistRegisterController,
+  factCheckController,
+} = require("../../controllers/registerControllers.js");
+const {
   submitNewsController,
   updateNewsController,
-  factCheckController,
-} = require("../controllers/index.js");
+} = require("../../controllers/newsControllers.js");
 const {
   LoginSchema,
   OrgRegistrationSchema,
