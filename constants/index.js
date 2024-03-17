@@ -8,7 +8,7 @@ const provider = new ethers.providers.JsonRpcProvider(
 const polygonWallet = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
 
 const signer = provider.getSigner();
-TEST_NEWS_ADDRESS = "0x9AF42ca633B08E70f2b919F0560be000cb1d42FC";
+TEST_NEWS_ADDRESS = "0x13750818Ec4B35F976aFDD15a927bb1708e18aeA";
 TEST_NEWS_ABI = [
   { inputs: [], stateMutability: "nonpayable", type: "constructor" },
   { inputs: [], name: "AccessControlBadConfirmation", type: "error" },
@@ -78,8 +78,11 @@ TEST_NEWS_ABI = [
   },
   { inputs: [], name: "EnforcedPause", type: "error" },
   { inputs: [], name: "ExpectedPause", type: "error" },
+  { inputs: [], name: "News__CidDoesNotExists", type: "error" },
   { inputs: [], name: "News__TokenIdDoesNotExists", type: "error" },
   { inputs: [], name: "News__UserCannotTransferCertificate", type: "error" },
+  { inputs: [], name: "News__UserDoesNotHaveEnoughRole", type: "error" },
+  { inputs: [], name: "News__ZeroPublishedContent", type: "error" },
   {
     inputs: [
       { internalType: "uint256", name: "value", type: "uint256" },
@@ -276,9 +279,14 @@ TEST_NEWS_ABI = [
         type: "uint256",
       },
       { indexed: true, internalType: "string", name: "cid", type: "string" },
-      { indexed: true, internalType: "bytes", name: "data", type: "bytes" },
+      {
+        indexed: true,
+        internalType: "string",
+        name: "factCid",
+        type: "string",
+      },
     ],
-    name: "storedLatestNews",
+    name: "newsCidEvent",
     type: "event",
   },
   {
@@ -292,7 +300,6 @@ TEST_NEWS_ABI = [
         name: "tokenId",
         type: "uint256",
       },
-      { indexed: false, internalType: "bytes", name: "data", type: "bytes" },
     ],
     name: "transfer",
     type: "event",
@@ -306,7 +313,21 @@ TEST_NEWS_ABI = [
   },
   {
     inputs: [],
+    name: "NEWS_FACT_CHECKER_ROLE",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "NEWS_PUBLISHER_ROLE",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "NEWS_PUBLISHER_ROLE_IN_ORG",
     outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
     stateMutability: "view",
     type: "function",
@@ -336,8 +357,12 @@ TEST_NEWS_ABI = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-    name: "burnCertificate",
+    inputs: [
+      { internalType: "uint256", name: "publisherTokenId", type: "uint256" },
+      { internalType: "string", name: "newsCid", type: "string" },
+      { internalType: "string", name: "factNewsCid", type: "string" },
+    ],
+    name: "factNotorize",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -346,24 +371,8 @@ TEST_NEWS_ABI = [
     inputs: [
       { internalType: "address", name: "_userAddress", type: "address" },
     ],
-    name: "checkAddressHaveCertificate",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "_userAddress", type: "address" },
-    ],
     name: "fetchLatestTokenIdOfAnUser",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-    name: "fetchNewsForTokenIdInStringArray",
-    outputs: [{ internalType: "string[]", name: "", type: "string[]" }],
     stateMutability: "view",
     type: "function",
   },
@@ -388,6 +397,34 @@ TEST_NEWS_ABI = [
   },
   {
     inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "getAllCheckedCidsForTokenId",
+    outputs: [{ internalType: "string[]", name: "", type: "string[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "string", name: "newsCid", type: "string" }],
+    name: "getAllFactCheckCidsForNewsCid",
+    outputs: [{ internalType: "string[]", name: "", type: "string[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "getAllNewsCidsForTokenId",
+    outputs: [{ internalType: "string[]", name: "", type: "string[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "getAllPublishersInOrg",
+    outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
     name: "getApproved",
     outputs: [{ internalType: "address", name: "", type: "address" }],
     stateMutability: "view",
@@ -401,9 +438,9 @@ TEST_NEWS_ABI = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-    name: "getNewsDataInBytesArray",
-    outputs: [{ internalType: "bytes[]", name: "", type: "bytes[]" }],
+    inputs: [{ internalType: "string", name: "newsCid", type: "string" }],
+    name: "getLatestfactCheckerCid",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
     stateMutability: "view",
     type: "function",
   },
@@ -452,10 +489,28 @@ TEST_NEWS_ABI = [
     type: "function",
   },
   {
+    inputs: [
+      { internalType: "address", name: "_to", type: "address" },
+      { internalType: "string", name: "userName", type: "string" },
+      { internalType: "string", name: "_tokenURI", type: "string" },
+    ],
+    name: "issueCertificate",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "name",
     outputs: [{ internalType: "string", name: "", type: "string" }],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "string", name: "newsCid", type: "string" }],
+    name: "notorize",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -478,6 +533,16 @@ TEST_NEWS_ABI = [
       { internalType: "address", name: "callerConfirmation", type: "address" },
     ],
     name: "renounceRole",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "tokenId", type: "uint256" },
+      { internalType: "bool", name: "IsfactChecker", type: "bool" },
+    ],
+    name: "revokeCertificate",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -517,35 +582,10 @@ TEST_NEWS_ABI = [
   },
   {
     inputs: [
-      { internalType: "address", name: "_to", type: "address" },
-      { internalType: "string", name: "userName", type: "string" },
-      { internalType: "string", name: "_credsURI", type: "string" },
-    ],
-    name: "sendCertificate",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
       { internalType: "address", name: "operator", type: "address" },
       { internalType: "bool", name: "approved", type: "bool" },
     ],
     name: "setApprovalForAll",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "string", name: "theString", type: "string" }],
-    name: "stringToUint256",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "pure",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "string", name: "newsCid", type: "string" }],
-    name: "submitNews",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -604,6 +644,26 @@ TEST_NEWS_ABI = [
     name: "transferFrom",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "tokenId", type: "uint256" },
+      { internalType: "string", name: "newsCid", type: "string" },
+    ],
+    name: "verifyCid",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "string", name: "newsCid", type: "string" },
+      { internalType: "string", name: "factCheckerCid", type: "string" },
+    ],
+    name: "verifyFactCheckerCid",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
     type: "function",
   },
 ];
