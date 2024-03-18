@@ -4,7 +4,10 @@ async function main() {
   const testNews = await hre.ethers.getContractFactory("TestNews");
   console.log("Deploying TestNews Contract.....");
 
-  const TestNews = await testNews.deploy({ gasPrice: 30000000000 });
+  const TestNews = await testNews.deploy({
+    // gasPrice: 30000000000,
+    gasLimit: 8000000,
+  });
   await TestNews.waitForDeployment();
   const TestNewsAddress = await TestNews.getAddress();
   console.log("TestNews Contract Address:", TestNewsAddress);

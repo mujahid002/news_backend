@@ -102,7 +102,7 @@ contract TestNews is
      */
     function issueCertificate(
         address _to,
-        // bool IsfactChecker,
+        bool IsfactChecker,
         string calldata userName,
         string calldata _tokenURI
     ) public whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -113,13 +113,13 @@ contract TestNews is
         uint256 tokenId = generateTokenId(_to, userName);
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _tokenURI);
-        // if (IsfactChecker) {
-        //     _grantRole(NEWS_FACT_CHECKER_ROLE, _to);
-        // } else {
-        //     _grantRole(NEWS_PUBLISHER_ROLE, _to);
-        // }
+        if (IsfactChecker) {
             _grantRole(NEWS_FACT_CHECKER_ROLE, _to);
+        } else {
             _grantRole(NEWS_PUBLISHER_ROLE, _to);
+        }
+            // _grantRole(NEWS_FACT_CHECKER_ROLE, _to);
+            // _grantRole(NEWS_PUBLISHER_ROLE, _to);
         emit transfer(_msgSender(), _to, tokenId);
     }
 

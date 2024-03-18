@@ -112,7 +112,7 @@ const createFileAndUploadForJournalist = async (data) => {
   }
 };
 
-const sendCertificateTxnForOrg = async (data) => {
+const issueCertificateTxnForOrg = async (data) => {
   try {
     if (!data) {
       return {
@@ -138,7 +138,7 @@ const sendCertificateTxnForOrg = async (data) => {
       isFactChecker = true;
     }
 
-    const gasAmount = await testNewsContract.estimateGas.sendCertificate(
+    const gasAmount = await testNewsContract.estimateGas.issueCertificate(
       data.org_wallet_address || "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
       data.org_username,
       uri
@@ -149,7 +149,7 @@ const sendCertificateTxnForOrg = async (data) => {
 
     const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
-    const tx = await testNewsContract.sendCertificate(
+    const tx = await testNewsContract.issueCertificate(
       data.org_wallet_address || "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
       data.org_username,
       uri,
@@ -190,14 +190,14 @@ const sendCertificateTxnForOrg = async (data) => {
       };
     }
   } catch (error) {
-    console.error("Error in sendCertificateTxn: ", error);
+    console.error("Error in issueCertificateTxn: ", error);
     return {
       success: false,
       error: error.message,
     };
   }
 };
-const sendCertificateTxnForJournalist = async (data) => {
+const issueCertificateTxnForJournalist = async (data) => {
   try {
     if (!data) {
       return {
@@ -217,7 +217,7 @@ const sendCertificateTxnForJournalist = async (data) => {
 
     console.log("The URI is ", uri);
 
-    const gasAmount = await testNewsContract.estimateGas.sendCertificate(
+    const gasAmount = await testNewsContract.estimateGas.issueCertificate(
       data.journalist_wallet_address ||
         "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
       data.journalist_username,
@@ -229,7 +229,7 @@ const sendCertificateTxnForJournalist = async (data) => {
 
     const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
-    const tx = await testNewsContract.sendCertificate(
+    const tx = await testNewsContract.issueCertificate(
       data.journalist_wallet_address ||
         "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
       data.journalist_username,
@@ -271,14 +271,14 @@ const sendCertificateTxnForJournalist = async (data) => {
       };
     }
   } catch (error) {
-    console.error("Error in sendCertificateTxnForJournalist: ", error);
+    console.error("Error in issueCertificateTxnForJournalist: ", error);
     return {
       success: false,
       error: error.message,
     };
   }
 };
-const submitNewsTxn = async (data) => {
+const notorizeTxn = async (data) => {
   try {
     if (!data) {
       return {
@@ -299,14 +299,14 @@ const submitNewsTxn = async (data) => {
 
     console.log("The URI is ", uri);
 
-    const gasAmount = await testNewsContract.estimateGas.submitNews(cid);
+    const gasAmount = await testNewsContract.estimateGas.notorize(cid);
 
     const defaultGasLimit = 5000000;
     console.log("the estimated gas is: ", gasAmount.toNumber());
 
     const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
-    const tx = await testNewsContract.submitNews(cid, {
+    const tx = await testNewsContract.notorize(cid, {
       gasLimit: gasLimit,
     });
 
@@ -340,7 +340,7 @@ const submitNewsTxn = async (data) => {
       };
     }
   } catch (error) {
-    console.error("Error in submitNewsTxn: ", error);
+    console.error("Error in notorizeTxn: ", error);
     return {
       success: false,
       error: error.message,
@@ -368,14 +368,14 @@ const submitNewsTxn = async (data) => {
 
 //     console.log("The URI is ", uri);
 
-//     const gasAmount = await testNewsContract.estimateGas.submitNews(cid);
+//     const gasAmount = await testNewsContract.estimateGas.notorize(cid);
 
 //     const defaultGasLimit = 5000000;
 //     console.log("the estimated gas is: ", gasAmount.toNumber());
 
 //     const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
-//     const tx = await testNewsContract.submitNews(cid, {
+//     const tx = await testNewsContract.notorize(cid, {
 //       gasLimit: gasLimit,
 //     });
 
@@ -514,8 +514,8 @@ module.exports = {
   // generateUniqueOrgIdTxn,
   // generateUniqueJournalistIdTxn,
   createFileAndUploadForOrg,
-  sendCertificateTxnForOrg,
-  sendCertificateTxnForJournalist,
-  submitNewsTxn,
+  issueCertificateTxnForOrg,
+  issueCertificateTxnForJournalist,
+  notorizeTxn,
   // updateNewsTxn,
 };

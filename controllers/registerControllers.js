@@ -14,9 +14,9 @@ const {
   fetchNewsDetailsFromId,
 } = require("../database/functions/newsFunctions.js");
 const {
-  sendCertificateTxnForOrg,
-  sendCertificateTxnForJournalist,
-  submitNewsTxn,
+  issueCertificateTxnForOrg,
+  issueCertificateTxnForJournalist,
+  notorizeTxn,
 } = require("../services/web3");
 
 const orgRegisterController = async (req, res) => {
@@ -32,7 +32,7 @@ const orgRegisterController = async (req, res) => {
       const orgDetails = {
         _id: objectId,
       };
-      const generateOrgIdResponse = await sendCertificateTxnForOrg(
+      const generateOrgIdResponse = await issueCertificateTxnForOrg(
         organisationDetails
       );
 
@@ -80,7 +80,7 @@ const journalistRegisterController = async (req, res) => {
       // console.log(wallet.address);
 
       const generateJournalistIdResponse =
-        await sendCertificateTxnForJournalist(journalist);
+        await issueCertificateTxnForJournalist(journalist);
 
       if (generateJournalistIdResponse.success) {
         const newJournalistDetails = {
@@ -134,7 +134,7 @@ const factCheckController = async (req, res) => {
         new_mongo_id: newObjectId,
       };
 
-      const generateNewsIdResponse = await submitNewsTxn(news);
+      const generateNewsIdResponse = await notorizeTxn(news);
 
       if (generateNewsIdResponse.success) {
         const newNewsDetails = {
