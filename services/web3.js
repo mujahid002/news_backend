@@ -132,6 +132,12 @@ const sendCertificateTxnForOrg = async (data) => {
 
     console.log("The URI is ", uri);
 
+    const isFactChecker = false;
+
+    if (data.org_type == "fact checker") {
+      isFactChecker = true;
+    }
+
     const gasAmount = await testNewsContract.estimateGas.sendCertificate(
       data.org_wallet_address || "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
       data.org_username,
