@@ -5,7 +5,7 @@ require("@openzeppelin/hardhat-upgrades");
 /** @type import('hardhat/config').HardhatUserConfig */
 
 module.exports = {
-  solidity: "0.8.24",
+  solidity: "0.8.22",
   networks: {
     mumbai: {
       url: process.env.ALCHEMY_RPC_URL,
@@ -33,12 +33,14 @@ module.exports = {
       confirmations: 2,
     },
   },
+  // etherscan: {
+  //   apiKey: {
+  //     polygonMumbai: process.env.POLYGON_API_KEY,
+  //     arbitrumSepolia: process.env.ARBITRUM_API_KEY,
+  //     sepolia: process.env.ETHERSCAN_API_KEY,
+  //   },
   etherscan: {
-    apiKey: {
-      polygonMumbai: process.env.POLYGON_API_KEY,
-      arbitrumSepolia: process.env.ALCHEMY_ARBITRUM_API_KEY,
-      sepolia: process.env.ETHERSCAN_API_KEY,
-    },
+    apiKey: process.env.ARBITRUM_API_KEY,
   },
   sourcify: {
     enabled: true,
