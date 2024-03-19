@@ -2,13 +2,13 @@ require("dotenv").config();
 const ethers = require("ethers");
 
 const provider = new ethers.providers.JsonRpcProvider(
-  `${process.env.ALCHEMY_MUMBAI_RPC_URL}`
+  `${process.env.ALCHEMY_ARBITRUM_SEPOLIA_RPC_URL}`
 );
 
-const polygonWallet = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
+const arbSepWallet = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
 
 const signer = provider.getSigner();
-TEST_NEWS_ADDRESS = "0x13750818Ec4B35F976aFDD15a927bb1708e18aeA";
+TEST_NEWS_ADDRESS = "0xbF98f9Dc69d10F5E296f7fF80C2909C85d066a0f";
 TEST_NEWS_ABI = [
   { inputs: [], stateMutability: "nonpayable", type: "constructor" },
   { inputs: [], name: "AccessControlBadConfirmation", type: "error" },
@@ -358,6 +358,16 @@ TEST_NEWS_ABI = [
   },
   {
     inputs: [
+      { internalType: "uint256", name: "orgTokenId", type: "uint256" },
+      { internalType: "uint256", name: "userTokenId", type: "uint256" },
+    ],
+    name: "checkUserBelongsToSameOrg",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
       { internalType: "uint256", name: "publisherTokenId", type: "uint256" },
       { internalType: "string", name: "newsCid", type: "string" },
       { internalType: "string", name: "factNewsCid", type: "string" },
@@ -670,13 +680,13 @@ TEST_NEWS_ABI = [
 const testNewsContract = new ethers.Contract(
   TEST_NEWS_ADDRESS,
   TEST_NEWS_ABI,
-  polygonWallet
+  arbSepWallet
 );
 
 module.exports = {
   provider,
   signer,
-  polygonWallet,
+  arbSepWallet,
   TEST_NEWS_ADDRESS,
   TEST_NEWS_ABI,
   testNewsContract,

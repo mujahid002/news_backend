@@ -132,7 +132,7 @@ const issueCertificateTxnForOrg = async (data) => {
 
     console.log("The URI is ", uri);
 
-    const isFactChecker = false;
+    let isFactChecker = false;
 
     if (data.org_type == "fact checker") {
       isFactChecker = true;
