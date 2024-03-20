@@ -6,8 +6,10 @@ const {
   fetchNewsDetailsFromId,
 } = require("../database/functions/newsFunctions.js");
 const {
-  submitNewsTxn,
-} = require("../services/web3");
+  storeUpdatedFactCheckerDetails,
+  fetchFactCheckerDetailsFromId,
+} = require("../database/functions/factCheckFunctions.js");
+const { notorizeTxn, factCheckTxn } = require("../services/web3");
 
 const submitNewsController = async (req, res) => {
   try {
@@ -20,7 +22,7 @@ const submitNewsController = async (req, res) => {
         _id: objectId,
       };
 
-      const generateNewsIdResponse = await submitNewsTxn(news);
+      const generateNewsIdResponse = await notorizeTxn(news);
 
       if (generateNewsIdResponse.success) {
         const newNewsDetails = {
@@ -64,6 +66,53 @@ const submitNewsController = async (req, res) => {
     res.status(500).send({ code: 500, message: "Internal Server Error" });
   }
 };
+const submitFactCheckController = async (req, res) => {
+  try {
+    const { _id } = req.body;
+
+    if (_id && typeof _id === "string" && ObjectId.isValid(_id)) {
+      const objectId = new ObjectId(_id);
+      const factCheckerData = await fetchFactCheckerDetailsFromId(objectId);
+      const factDetails = {
+        _id: objectId,
+      };
+
+      const generateNewsIdResponse = await factCheckTxn(factCheckerData);
+
+      if (generateNewsIdResponse && generateNewsIdResponse.success) {
+        // Check if generateNewsIdResponse is defined
+        const { factCheckCid, jsonData, txnHash } = generateNewsIdResponse; // Assuming these variables are defined elsewhere
+
+        const newFactDetails = {
+          ...factDetails,
+          fact_check_cid: factCheckCid,
+          fact_check_pinata_uri: jsonData,
+          fact_check_transaction_hash: txnHash,
+        };
+
+        await storeUpdatedFactCheckerDetails(newFactDetails);
+
+        // Sending a single argument or an array of arguments
+        res.status(200).json({
+          updatedMongoWithThisLatestData: newFactDetails,
+        });
+        return;
+      } else {
+        res.status(500).send({ code: 500, message: "Internal Server Error" });
+        return;
+      }
+    } else {
+      res
+        .status(500)
+        .send({ code: 500, message: "Internal server error: Invalid _id" });
+      return;
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ code: 500, message: "Internal Server Error" });
+  }
+};
+
 const updateNewsController = async (req, res) => {
   try {
     const { old_id, new_id } = req.body;
@@ -88,7 +137,7 @@ const updateNewsController = async (req, res) => {
         _id: newObjectId,
       };
 
-      const generateNewsIdResponse = await submitNewsTxn(news);
+      const generateNewsIdResponse = await notorizeTxn(news);
 
       if (generateNewsIdResponse.success) {
         const newNewsDetails = {
@@ -146,4 +195,5 @@ const updateNewsController = async (req, res) => {
 module.exports = {
   submitNewsController,
   updateNewsController,
+  submitFactCheckController,
 };

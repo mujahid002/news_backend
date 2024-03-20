@@ -141,7 +141,7 @@ const factCheckController = async (req, res) => {
           ...newsDetails,
           news_published_latest_wallet_address:
             news.news_published_latest_wallet_address ||
-            "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
+            "0x709d29dc073F42feF70B6aa751A8D186425b2750",
           news_latest_pinata_id: generateNewsIdResponse.newsId,
           // news_id_inBytes: generateNewsIdResponse.newdIdInBytes,
           news_latest_pinata_uri: generateNewsIdResponse.jsonData,
