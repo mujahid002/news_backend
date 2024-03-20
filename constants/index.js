@@ -8,7 +8,7 @@ const provider = new ethers.providers.JsonRpcProvider(
 const arbSepWallet = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
 
 const signer = provider.getSigner();
-TEST_NEWS_ADDRESS = "0xbF98f9Dc69d10F5E296f7fF80C2909C85d066a0f";
+TEST_NEWS_ADDRESS = "0x631E48681b75a6cAe468642Cd3C05fA8E6b3622E";
 TEST_NEWS_ABI = [
   { inputs: [], stateMutability: "nonpayable", type: "constructor" },
   { inputs: [], name: "AccessControlBadConfirmation", type: "error" },
