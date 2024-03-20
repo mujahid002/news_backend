@@ -19,8 +19,8 @@ module.exports = {
       url: process.env.ALCHEMY_ARBITRUM_RPC_URL,
       accounts: [process.env.PRIVATE_KEY],
       chainId: 421614,
-      gasPrice: "auto",
-      gasLimit: 6000000, // Adjust as needed
+      // gasPrice: "auto",
+      gasLimit: 30000000,
       saveDeployments: true,
     },
     sepolia: {
