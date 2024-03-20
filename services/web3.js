@@ -1,7 +1,12 @@
 require("dotenv").config();
+const { ObjectId } = require("mongodb");
 const ethers = require("ethers");
 const { testNewsContract } = require("../constants/index.js");
 const uploadFile = require("../services/pinata.js");
+
+const {
+  fetchOrganizationDetailsFromId,
+} = require("../database/functions/orgFunctions.js");
 
 const createFileAndUploadForOrg = async (data) => {
   try {
@@ -111,6 +116,41 @@ const createFileAndUploadForJournalist = async (data) => {
     throw error;
   }
 };
+const createFactCheckAndUploadFile = async (data, orgData) => {
+  try {
+    const fileName = `${data.fact_checker_org_id}-${orgData.org_type}-${data.comment_journalist}.json`;
+    const selectedData = {
+      fact_check_news: data.fact_check_news,
+      fact_check_time: data.fact_check_time,
+      fact_check_priority: data.fact_check_priority,
+      comment: data.comment,
+      comment_timestamp: Math.floor(Date.now() / 1000),
+      comment_journalist: data.comment_journalist,
+      fact_check_documents: data.fact_check_documents,
+      fact_check_links: data.fact_check_links,
+      fact_check_videos: data.fact_check_videos,
+      fact_checker_org_name: orgData.org_name,
+      fact_checker_org_legal_name: orgData.org_legal_name,
+      fact_checker_org_category: orgData.org_category,
+      fact_checker_org_website: orgData.org_website,
+      fact_checker_org_contact_emails: orgData.org_contact_emails,
+      fact_checker_org_type: orgData.org_type,
+      fact_checker_org_wallet_address: orgData.org_wallet_address,
+      fact_checker_token_id: orgData.org_token_id,
+    };
+
+    const cid = await uploadFile(fileName, JSON.stringify(selectedData));
+
+    if (!cid) {
+      throw new Error("Failed to upload file to IPFS.");
+    }
+
+    return cid;
+  } catch (error) {
+    console.error("Error creating and uploading file for journalist:", error);
+    throw error;
+  }
+};
 
 const issueCertificateTxnForOrg = async (data) => {
   try {
@@ -139,7 +179,8 @@ const issueCertificateTxnForOrg = async (data) => {
     }
 
     const gasAmount = await testNewsContract.estimateGas.issueCertificate(
-      data.org_wallet_address || "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
+      // data.org_wallet_address ||
+      "0x709d29dc073F42feF70B6aa751A8D186425b2750",
       data.org_username,
       uri
     );
@@ -150,7 +191,8 @@ const issueCertificateTxnForOrg = async (data) => {
     const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
     const tx = await testNewsContract.issueCertificate(
-      data.org_wallet_address || "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
+      // data.org_wallet_address ||
+      "0x709d29dc073F42feF70B6aa751A8D186425b2750",
       data.org_username,
       uri,
       {
@@ -171,8 +213,8 @@ const issueCertificateTxnForOrg = async (data) => {
 
       console.log(
         `Token ID: ${tokenId} minted to ${
-          data.org_wallet_address ||
-          "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5"
+          // data.org_wallet_address ||
+          "0x709d29dc073F42feF70B6aa751A8D186425b2750"
         } with transaction hash ${tx.hash}`
       );
 
@@ -218,8 +260,8 @@ const issueCertificateTxnForJournalist = async (data) => {
     console.log("The URI is ", uri);
 
     const gasAmount = await testNewsContract.estimateGas.issueCertificate(
-      data.journalist_wallet_address ||
-        "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
+      // data.journalist_wallet_address ||
+      "0x709d29dc073F42feF70B6aa751A8D186425b2750",
       data.journalist_username,
       uri
     );
@@ -230,8 +272,8 @@ const issueCertificateTxnForJournalist = async (data) => {
     const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
     const tx = await testNewsContract.issueCertificate(
-      data.journalist_wallet_address ||
-        "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5",
+      // data.journalist_wallet_address ||
+      "0x709d29dc073F42feF70B6aa751A8D186425b2750",
       data.journalist_username,
       uri,
       {
@@ -252,8 +294,8 @@ const issueCertificateTxnForJournalist = async (data) => {
 
       console.log(
         `Token ID: ${tokenId} minted to ${
-          data.journalist_wallet_address ||
-          "0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5"
+          // data.journalist_wallet_address ||
+          "0x709d29dc073F42feF70B6aa751A8D186425b2750"
         } with transaction hash ${tx.hash}`
       );
 
@@ -299,36 +341,36 @@ const notorizeTxn = async (data) => {
 
     console.log("The URI is ", uri);
 
-    const gasAmount = await testNewsContract.estimateGas.notorize(cid);
+    // const gasAmount = await testNewsContract.estimateGas.notorize(cid);
 
-    const defaultGasLimit = 5000000;
-    console.log("the estimated gas is: ", gasAmount.toNumber());
+    const defaultGasLimit = 30000000;
+    // console.log("the estimated gas is: ", gasAmount.toNumber());
 
-    const gasLimit = gasAmount.toNumber() || defaultGasLimit;
+    // const gasLimit = gasAmount.toNumber() || defaultGasLimit;
 
     const tx = await testNewsContract.notorize(cid, {
-      gasLimit: gasLimit,
+      gasLimit: 30000000,
+      // gasLimit: gasLimit,
     });
 
     // Wait for the transaction to be mined
     const receipt = await tx.wait();
 
     // Find the emitted event in the logs
-    const storedLatestNewsEvent = receipt.events.find(
-      (event) => event.event === "storedLatestNews"
-    );
+    // const newsCidEventEvent = receipt.events.find(
+    //   (event) => event.event === "newsCidEvent"
+    // );
 
-    if (storedLatestNewsEvent) {
-      const cidInBytes = storedLatestNewsEvent.args.data;
+    if (receipt) {
+      // const cidInBytes = newsCidEventEvent.args.data;
 
       console.log(
-        `Uploaded CID to Blockchain: CID: ${cid} & Data in Bytes: ${cidInBytes} with transaction hash ${tx.hash}`
+        `Uploaded CID to Blockchain: CID: ${cid} with transaction hash ${tx.hash}`
       );
 
       return {
         success: true,
         newsId: cid,
-        newdIdInBytes: cidInBytes,
         jsonData: uri,
         txnHash: tx.hash,
       };
@@ -341,6 +383,97 @@ const notorizeTxn = async (data) => {
     }
   } catch (error) {
     console.error("Error in notorizeTxn: ", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+const factCheckTxn = async (data) => {
+  try {
+    if (!data) {
+      return {
+        success: false,
+        error: "Invalid parameters. Wallet and data are required.",
+      };
+    }
+
+    const _id = data.fact_checker_org_id;
+    console.log("the id is", _id);
+
+    if (_id && typeof _id === "string" && ObjectId.isValid(_id)) {
+      const objectId = new ObjectId(_id);
+      console.log("the objectId is", objectId);
+
+      const orgData = await fetchOrganizationDetailsFromId(objectId);
+      // Upload data to pinata
+      // const cid = await uploadFile(data.news_authors[0], JSON.stringify(data));
+      const cid = await createFactCheckAndUploadFile(data, orgData);
+
+      // await cid.toString();
+
+      if (!cid) {
+        throw new Error("Failed to obtain CID for the data file.");
+      }
+
+      const uri = `https://ipfs.io/ipfs/${cid}`;
+
+      console.log("The URI is ", uri);
+
+      const orgTokenIdUint256 = ethers.BigNumber.from(orgData.org_token_id);
+
+      // const gasAmount = await testNewsContract.estimateGas.factNotorize(
+      //   orgTokenIdUint256,
+      //   data.fact_check_news,
+      //   cid
+      // );
+
+      const defaultGasLimit = 30000000;
+      // console.log("the estimated gas is: ", gasAmount.toNumber());
+
+      // const gasLimit = gasAmount.toNumber() || defaultGasLimit;
+
+      const tx = await testNewsContract.factNotorize(
+        orgTokenIdUint256,
+        data.fact_check_news,
+        cid,
+        {
+          gasLimit: defaultGasLimit,
+          // gasLimit: gasLimit,
+        }
+      );
+
+      // Wait for the transaction to be mined
+      const receipt = await tx.wait();
+
+      // Find the emitted event in the logs
+      // const newsCidEventEvent = receipt.events.find(
+      //   (event) => event.event === "newsCidEvent"
+      // );
+
+      if (receipt) {
+        console.log(
+          `Uploaded CID to Blockchain: CID: ${cid} for news cid of  ${data.fact_check_news} with transaction hash ${tx.hash}`
+        );
+
+        return {
+          success: true,
+          factCheckCid: cid,
+          jsonData: uri,
+          txnHash: tx.hash,
+        };
+      } else {
+        console.log("Event not found in transaction logs");
+        return {
+          success: false,
+          error: "Event not found in transaction logs",
+        };
+      }
+    } else {
+      console.error("Unable to get Org Data from given _id");
+    }
+  } catch (error) {
+    console.error("Error in factCheckTxn: ", error);
     return {
       success: false,
       error: error.message,
@@ -383,12 +516,12 @@ const notorizeTxn = async (data) => {
 //     const receipt = await tx.wait();
 
 //     // Find the emitted event in the logs
-//     const storedLatestNewsEvent = receipt.events.find(
-//       (event) => event.event === "storedLatestNews"
+//     const newsCidEventEvent = receipt.events.find(
+//       (event) => event.event === "newsCidEvent"
 //     );
 
-//     if (storedLatestNewsEvent) {
-//       const cidInBytes = storedLatestNewsEvent.args.data;
+//     if (newsCidEventEvent) {
+//       const cidInBytes = newsCidEventEvent.args.data;
 
 //       console.log(
 //         `Uploaded CID to Blockchain: CID: ${cid} & Data in Bytes: ${cidInBytes} with transaction hash ${tx.hash}`
@@ -508,7 +641,7 @@ const notorizeTxn = async (data) => {
 //     };
 //   }
 // };
-// // generateUniqueOrgIdTxn("0x1c620232Fe5Ab700Cc65bBb4Ebdf15aFFe96e1B5", "Mujahid");
+// // generateUniqueOrgIdTxn("0x709d29dc073F42feF70B6aa751A8D186425b2750", "Mujahid");
 
 module.exports = {
   // generateUniqueOrgIdTxn,
@@ -517,5 +650,6 @@ module.exports = {
   issueCertificateTxnForOrg,
   issueCertificateTxnForJournalist,
   notorizeTxn,
+  factCheckTxn,
   // updateNewsTxn,
 };
