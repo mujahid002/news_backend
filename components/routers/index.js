@@ -32,6 +32,11 @@ const {
 } = require("../validators/index.js");
 const validateSchema = require("../validators/validateSchema.js");
 
+const {
+  verifyNewsCidController,
+  verifyFactCidController,
+} = require("../../services/verify.js");
+
 const apiRouter = express.Router();
 
 apiRouter.post(
@@ -63,6 +68,18 @@ apiRouter.post(
   "/news/fact-check",
   // validateSchema(NewsDetailsSchema),
   submitFactCheckController
+);
+
+apiRouter.post(
+  "/verify/news-cid",
+  // validateSchema(NewsDetailsSchema),
+  verifyNewsCidController
+);
+
+apiRouter.post(
+  "/verify/fact-cid",
+  // validateSchema(NewsDetailsSchema),
+  verifyFactCidController
 );
 apiRouter.get("/organizations", async (req, res) => {
   const orgCategory = req.query.org_category;
