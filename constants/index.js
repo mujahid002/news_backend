@@ -2,7 +2,7 @@ require("dotenv").config();
 const ethers = require("ethers");
 
 const provider = new ethers.providers.JsonRpcProvider(
-  `${process.env.ALCHEMY_ARBITRUM_SEPOLIA_RPC_URL}`
+  `${process.env.ARBITRUM_SEPOLIA_RPC_URL}`
 );
 
 const arbSepWallet = new ethers.Wallet(`${process.env.PRIVATE_KEY}`, provider);
